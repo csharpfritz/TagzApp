@@ -93,20 +93,20 @@
 
 </div>
 
-@*
-
-			window.TagzApp.ActivateKeyboardNavigation();
-
-			window.onload = window.Masonry.resizeAllGridItems();
-			window.addEventListener("resize", Masonry.resizeAllGridItems);
-
-*@
+<MessageDetails @ref="MessageDetailsDialog" Model="SelectedContent" />
 
 @code {
 
 	[CascadingParameter(Name = "HideFooter")] public bool HideFooter { get; set; }
 
 	public int BlockedUserCount { get; set; } = 0;
+
+	public bool ShowModal { get; set; } = false;
+
+	public MessageDetails MessageDetailsDialog { get; set; }
+
+
+	private ModerationContentModel SelectedContent { get; set; }
 
 	public PauseButton ThePauseButton { get; set; } = new();
 
@@ -121,6 +121,7 @@
 	private List<string> _FilteredProviders = [];
 
 	private FilterModerationState _FilterApprovalStatus = FilterModerationState.All;
+
 	private FilterModerationState FilterApprovalStatus
 	{
 		get { return _FilterApprovalStatus; }
@@ -339,6 +340,14 @@
 		}
 
 		await InvokeAsync(StateHasChanged);
+	}
+
+	public async Task ShowMessageDetails(ModerationContentModel content)
+	{
+		SelectedContent = content;
+		ShowModal = true;
+		await MessageDetailsDialog.Open();
+		StateHasChanged();
 	}
 
 	async Task ToggleProviderFilter(string providerId)

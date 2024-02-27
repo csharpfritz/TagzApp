@@ -23,7 +23,7 @@
 			}
 			<i class="bi bi-x-circle-fill reject" title="Reject this content" @onclick="async () => await Moderate(ModerationState.Rejected)"></i>
 			<i class="bi bi-journal-text more"
-				 @onclick="@(() => NavigationManager.NavigateTo($"/MessageDetails/{Content.Provider}/{Content.ProviderId}"))"
+				 @onclick="ShowDetails"
 				 title="More Actions"></i>
 		</div>
 	}
@@ -203,6 +203,13 @@
 			ShowModerationActions = false;
 		}
 		StateHasChanged();
+	}
+
+	public async Task ShowDetails()
+	{
+		
+		await ModerationPage.ShowMessageDetails(Content);
+
 	}
 
 	public void Reveal()
