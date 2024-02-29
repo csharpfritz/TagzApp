@@ -6,3 +6,39 @@
 #messageDetailsUI A.authorName:hover {
 	text-decoration: underline !important;
 }
+
+.m-header {
+	display: grid;
+	grid-template-columns: 36px 1fr 16px;
+	grid-template-rows: 10px 14px 14px;
+	grid-column-gap: 10px;
+	grid-row-gap: 10px;
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid #515151;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: space-between;
+	padding: 1rem 1rem;
+	padding-bottom: 1rem;
+	border-bottom: 1px solid #dee2e6;
+	border-top-left-radius: calc(.3rem - 1px);
+	border-top-right-radius: calc(.3rem - 1px);
+}
+
+.card-body {
+	padding: 0;
+}
+
+.actions ul {
+	list-style: none;
+	padding-left: 0;
+	border-top: 1px solid white;
+}
+
+.actions li {
+	border-bottom: 1px solid white;
+	padding: 4px 4px 4px 1em;
+	display: flex;
+	justify-content: space-between;
+}
+

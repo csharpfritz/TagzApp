@@ -93,7 +93,9 @@
 
 </div>
 
-<MessageDetails @ref="MessageDetailsDialog" Model="SelectedContent" />
+<CascadingValue Value="this">
+	<MessageDetails @ref="MessageDetailsDialog" Model="SelectedContent" />
+</CascadingValue>
 
 @code {
 
@@ -105,14 +107,12 @@
 
 	public MessageDetails MessageDetailsDialog { get; set; }
 
-
 	private ModerationContentModel SelectedContent { get; set; }
 
 	public PauseButton ThePauseButton { get; set; } = new();
+	private HashSet<dynamic> _PauseQueue = new();
 
 	private SortedList<DateTimeOffset, TagzApp.ViewModels.Data.ModerationContentModel> _Content = new();
-
-	private HashSet<dynamic> _PauseQueue = new();
 
 	private HashSet<NewModerator> _Moderators = new();
 
@@ -137,7 +137,7 @@
 		}
 	}
 
-	private HubConnection _Connection;
+	internal HubConnection _Connection;
 
 	string _Tag = string.Empty;
 

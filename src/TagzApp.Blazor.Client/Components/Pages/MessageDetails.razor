@@ -1,121 +1,121 @@
 ﻿@using TagzApp.ViewModels.Data
+@using Microsoft.AspNetCore.SignalR.Client
 @using Humanizer
 
 @if (Model is not null)
 {
 
-<div class="modal @modalClass"
-		 id="contentModal" tabindex="-1"
-		 role="dialog"
-		 style="display: @modalDisplay; overflow-y: auto;"
-		 aria-labelledby="contentModalLabel" aria-hidden="true"
-		 @onclick="Close">
-	<div style="max-width: 70%!important;" class="modal-dialog modal-dialog-centered">
-		<div class="modal-inner">
+	<div class="modal @modalClass"
+			 id="contentModal" tabindex="-1"
+			 role="dialog"
+			 style="display: @modalDisplay; overflow-y: auto;"
+			 aria-labelledby="contentModalLabel" aria-hidden="true"
+			 @onclick="Close">
+		<div style="max-width: 70%!important;" class="modal-dialog modal-dialog-centered">
+			<div class="modal-inner">
 
-			<div class="modal-content" @onclick:stopPropagation="true">
-				<div class="modal-header">
-@* 					<div class="row">
-						<div class="col-12">
- *@
-								<a href="@Model.AuthorProfileUri" target="_blank">
-									<img src="@Model.AuthorProfileImageUri" onerror="this.src='/img/user.jpg';" class="rounded-circle" style="margin-top: 20px; width: 50px; height: 50px;" />
-								</a>
-								<a href="@Model.AuthorProfileUri" target="_blank" style="margin-left: 40px;">
-									@Model.AuthorDisplayName
-								</a>
-							@if (!Model.AuthorUserName.TrimStart('@').Equals(Model.AuthorDisplayName, StringComparison.CurrentCultureIgnoreCase))
-							{
-								<br/>
-								@Model.AuthorUserName
-							}
-							<button type="button" class="btn-close" data-dismiss="modal"
-											style="position: absolute; right: 15px; top: 15px;"
-								aria-label="Close" @onclick="Close">
-							</button>
-@* 						</div>
+				<div class="modal-content" @onclick:stopPropagation="true">
+					<div class="m-header">
+						@* 					<div class="row">
+					<div class="col-12">
+					*@
+						<a href="@Model.AuthorProfileUri" target="_blank">
+							<img src="@Model.AuthorProfileImageUri" onerror="this.src='/img/user.jpg';" class="rounded-circle" style="margin-top: 20px; width: 50px; height: 50px;" />
+						</a>
+						<a href="@Model.AuthorProfileUri" target="_blank" style="margin-left: 40px;">
+							@Model.AuthorDisplayName
+						</a>
+						<button type="button" class="btn-close" data-dismiss="modal"
+										aria-label="Close" @onclick="Close">
+						</button>
+						@if (!Model.AuthorUserName.TrimStart('@').Equals(Model.AuthorDisplayName, StringComparison.CurrentCultureIgnoreCase))
+						{
+							<span style="width: 40px; display: block;"></span>
+							<span style="margin-left: 40px;">@Model.AuthorUserName</span>
+							<span></span>
+						}
+						else
+						{
+							<span></span>
+							<span></span>
+							<span></span>
+						}
+						@* 						</div>
 					</div>
- *@
-					@if (Model.State != ModerationState.Pending)
-					{
-						<div class="row">
-							<div class="col-12">
-								<text>@Model.State.ToString() </text>
+					*@
+						@if (Model.State != ModerationState.Pending)
+						{
+							<span></span>
+							<span style="margin-left: 40px;">
+								@Model.State.ToString()
 								@if (Model.State == ModerationState.Rejected || Model.State == ModerationState.Approved)
 								{
 									<text> by @Model.Moderator </text>
-
-									<br />
 								}
 								@if (!string.IsNullOrEmpty(Model.Reason))
 								{
 									<text> for @Model.Reason</text>
 								}
-							</div>
-						</div>
-					}
+							</span>
+							<span></span>
+						}
 
-				</div>
+					</div>
 
-				<div class="modal-body">
+					<div class="modal-body">
 
-					<div class="row">
+						<div class="row">
 
-						<div class="col-md-6">
+							<div class="col-md-6">
 
-							<p id="messageContent" class="card-text">@((MarkupString)(Model.Content.FormatContentWithEmotes()))</p>
+								<p id="messageContent" class="card-text">@((MarkupString)(Model.Content.FormatContentWithEmotes()))</p>
 
-							@if (Model.PreviewCard is not null)
-							{
-								if (Model.PreviewCard.ImageUri.ToString().EndsWith(".mp4"))
+								@if (Model.PreviewCard is not null)
 								{
-									<div class="contentcard">
-										<video muted="muted" controls="controls" autoplay src="@Model.PreviewCard.ImageUri" class="card-img-top" alt="@Model.PreviewCard.AltText"></video>
-									</div>
-								}
-								else
-								{
-									<div class="contentcard">
-										<img onerror="this.onerror=null; window.WaterfallUi.FixEmbedImage(this);" src="@Model.PreviewCard.ImageUri" class="card-img-top" alt="@Model.PreviewCard.AltText" />
-									</div>
-								}
-							}
-
-						</div>
-						<div class="col-md-6">
-							<div class="card">
-								<div class="card-body actions">
-
-									@if (!string.IsNullOrEmpty(ValidationMessage))
+									if (Model.PreviewCard.ImageUri.ToString().EndsWith(".mp4"))
 									{
-										<p class="alert-danger alert">@ValidationMessage</p>
+										<div class="contentcard">
+											<video muted="muted" controls="controls" autoplay src="@Model.PreviewCard.ImageUri" class="card-img-top" alt="@Model.PreviewCard.AltText"></video>
+										</div>
 									}
+									else
+									{
+										<div class="contentcard">
+											<img onerror="this.onerror=null; window.WaterfallUi.FixEmbedImage(this);" src="@Model.PreviewCard.ImageUri" class="card-img-top" alt="@Model.PreviewCard.AltText" />
+										</div>
+									}
+								}
 
-									<h5 class="card-title">Actions</h5>
-									<EditForm FormName="BlockUser" Model="Model" OnSubmit="BlockUser" Enhance>
+							</div>
+							<div class="col-md-6">
+								<div class="card" style="height: 100%;">
+									<h5 class="card-title" style="margin: 5px;">Actions</h5>
+									<div class="card-body actions">
+
 										<ul>
 											<li>
 												Block @Model.AuthorDisplayName on @Model.Provider.ToLowerInvariant().Humanize(LetterCasing.Title)
-												<input type="submit" name="blockUser" value="Go" />
+												<button name="blockUser" @onclick="BlockUser">Go</button>
+											</li>
+											<li>
+												Add to Queue
+												<input type="checkbox" @bind-value="AddedToQueue" @onclick="UpdateMessageOnQueue" />
 											</li>
 										</ul>
-									</EditForm>
 
-
+									</div>
 
 								</div>
-
 							</div>
 						</div>
+
 					</div>
 
 				</div>
-
 			</div>
 		</div>
-	</div>
 
-</div>
+	</div>
 
 
 	@if (showBackdrop)
@@ -130,6 +130,9 @@
 	[Parameter]
 	public ModerationContentModel Model { get; set; }
 
+	[CascadingParameter]
+	public Components.Pages.Moderation ModerationPage { get; set; }
+
 	private string ValidationMessage { get; set; }
 
 	private string modalDisplay = "block";
@@ -137,12 +140,17 @@
 	private bool showBackdrop = true;
 	private string _InnerModalCssClass = string.Empty;
 
+	public bool AddedToQueue { get; set; } = false;
+
 	protected override async Task OnInitializedAsync()
 	{
 
-		Task.Delay(300).ContinueWith(async _ =>
+		await Task.Delay(300).ContinueWith(async _ =>
+
 		{
+
 			modalClass = "show";
+
 			await InvokeAsync(StateHasChanged);
 		});
 
@@ -152,13 +160,19 @@
 	async Task BlockUser()
 	{
 
-		// TODO: Change to call method on ModerationHub
-		// var user = await UserManager.FindByNameAsync(HttpContext.User.Identity.Name);
+		await ModerationPage._Connection.InvokeAsync("BlockUser", Model.AuthorUserName, Model.Provider);
 
-		// await ModerationRepository.BlockUser(Model.AuthorUserName, Model.Provider, user.DisplayName, new DateTimeOffset(new DateTime(2050, 1, 1), TimeSpan.Zero));
 		ValidationMessage = $"User {Model.AuthorUserName} has been blocked on {Model.Provider.ToLowerInvariant().Humanize(LetterCasing.Title)}";
 
 	}
+
+		async Task UpdateMessageOnQueue()
+		{
+
+			// TODO: Add to the queue somewhere
+
+
+		}
 
 	public async Task Open()
 	{
