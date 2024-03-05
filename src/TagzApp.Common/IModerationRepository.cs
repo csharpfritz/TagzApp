@@ -62,5 +62,14 @@ public interface IModerationRepository
 	/// <returns></returns>
 	Task UnblockUser(string userId, string provider);
 
+	Task AddToQueue(string provider, string providerId, string speakerNotes);
+
+	Task<QueueItem> GetItemFromQueue(string provider, string providerId);
+
+	Task MarkQueueItemAsCompleted(string provider, string providerId);
+
+	Task<IEnumerable<QueueItem>> GetQueueItems();
+
+	Task<IEnumerable<QueueItem>> GetIncompleteQueueItems();
 
 }

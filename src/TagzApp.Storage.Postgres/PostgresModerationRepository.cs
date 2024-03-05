@@ -221,4 +221,99 @@ internal class PostgresModerationRepository : IModerationRepository
 		return ((Content)item, action);
 
 	}
+
+	public async Task AddToQueue(string provider, string providerId, string speakerNotes)
+	{
+
+		// Add a new item to the queue
+		var queueItem = new PgQueueItem
+		{
+			Provider = provider,
+			ProviderId = providerId,
+			SpeakerNotes = speakerNotes
+		};
+		_Context.QueueItems.Add(queueItem);
+
+		await _Context.SaveChangesAsync();
+
+	}
+
+	public async Task<QueueItem> GetItemFromQueue(string provider, string providerId)
+	{
+
+		// Find the requested queue item and return it
+		var queueItem = await _Context.QueueItems
+			.Where(q => q.Provider == provider && q.ProviderId == providerId)
+			.FirstOrDefaultAsync();
+
+		if (queueItem is null) throw new ArgumentException("Unable to find queue item with that id");
+
+		var theContent = (Content)await _Context.Content.AsNoTracking()
+				.Where(c => c.Provider == provider && c.ProviderId == providerId)
+				.FirstOrDefaultAsync();
+
+		return new QueueItem
+		{
+			Content = theContent,
+			SpeakerNotes = queueItem.SpeakerNotes,
+			OrderBy = queueItem.OrderBy,
+			IsCompleted = queueItem.IsCompleted
+		};
+
+	}
+
+	public async Task MarkQueueItemAsCompleted(string provider, string providerId)
+	{
+
+		// Find the requested queue item and remove it
+		var queueItem = await _Context.QueueItems
+			.Where(q => q.Provider == provider && q.ProviderId == providerId)
+			.FirstOrDefaultAsync();
+
+		if (queueItem is null) throw new ArgumentException("Unable to find queue item with that id");
+
+		queueItem.IsCompleted = true;
+		await _Context.SaveChangesAsync();
+
+	}
+
+	public async Task<IEnumerable<QueueItem>> GetQueueItems()
+	{
+
+		// Get the list of queue items from the context joining into the content table
+		return await _Context.QueueItems.AsNoTracking()
+			.Join(_Context.Content,
+				q => new { q.Provider, q.ProviderId },
+				c => new { c.Provider, c.ProviderId }, (q, c) => new { q, c })
+			.Select(j => new QueueItem
+			{
+				Content = (Content)j.c,
+				SpeakerNotes = j.q.SpeakerNotes,
+				OrderBy = j.q.OrderBy,
+				IsCompleted = j.q.IsCompleted
+			})
+			.ToArrayAsync();
+
+	}
+
+	public async Task<IEnumerable<QueueItem>> GetIncompleteQueueItems()
+	{
+
+		// Get the list of queue items from the context joining into the content table
+		return await _Context.QueueItems.AsNoTracking()
+			.Where(q => !q.IsCompleted)
+			.Join(_Context.Content,
+				q => new { q.Provider, q.ProviderId },
+				c => new { c.Provider, c.ProviderId }, (q, c) => new { q, c })
+			.Select(j => new QueueItem
+			{
+				Content = (Content)j.c,
+				SpeakerNotes = j.q.SpeakerNotes,
+				OrderBy = j.q.OrderBy,
+				IsCompleted = j.q.IsCompleted
+			})
+			.ToArrayAsync();
+
+	}
+
 }

@@ -134,6 +134,56 @@ public class ModerationHub : Hub<IModerationClient>
 		await _Repository.BlockUser(authorUserName, provider,thisUser?.NormalizedUserName ?? thisUser.Email, new DateTimeOffset(new DateTime(2050,1,1), TimeSpan.Zero));
 	}
 
+	// Add Message to the Queue in ModerationRepository
+	public async Task AddToQueue(string provider, string providerId, string speakerNotes)
+	{
+		await _Repository.AddToQueue(provider, providerId, speakerNotes);
+
+		var thisQueueItem = await _Repository.GetItemFromQueue(provider, providerId);
+		await Clients.All.NewQueueItem(new ViewModels.Data.QueueItem {
+			Content = (ContentModel)thisQueueItem.Content,
+			SpeakerNotes = thisQueueItem.SpeakerNotes,
+			IsCompleted = thisQueueItem.IsCompleted,
+			OrderBy = thisQueueItem.OrderBy
+		});
+
+	}
+
+	// Mark a QueueItem as completed in ModerationRepository
+	public async Task MarkQueueItemAsCompleted(string provider, string providerId)
+	{
+		await _Repository.MarkQueueItemAsCompleted(provider, providerId);
+	}
+
+	// Get all QueueItems from ModerationRepository and return them as a ViewModels.Data.QueueItem
+	public async Task<ViewModels.Data.QueueItem[]> GetQueueItems()
+	{
+		var queueItems = await _Repository.GetQueueItems();
+		return queueItems.Select(q =>
+			new ViewModels.Data.QueueItem {
+				Content = (ContentModel)q.Content,
+				SpeakerNotes = q.SpeakerNotes,
+				IsCompleted = q.IsCompleted,
+				OrderBy = q.OrderBy
+			}
+		).ToArray();
+	}
+
+
+	public async Task<ViewModels.Data.QueueItem[]> GetIncompleteQueueItems()
+	{
+		var queueItems = await _Repository.GetIncompleteQueueItems();
+		return queueItems.Select(q =>
+			new ViewModels.Data.QueueItem {
+				Content = (ContentModel)q.Content,
+				SpeakerNotes = q.SpeakerNotes,
+				IsCompleted = q.IsCompleted,
+				OrderBy = q.OrderBy
+			}
+		).ToArray();
+	}
+
+
 }
 
 public interface IModerationClient
@@ -150,6 +200,10 @@ public interface IModerationClient
 	Task RemoveModerator(string email);
 
 	Task NewBlockedUserCount(int count);
+
+	Task NewQueueItem(ViewModels.Data.QueueItem queueItem);
+
+	Task MarkQueueItemAsCompleted(string provider, string providerId);
 
 }
 

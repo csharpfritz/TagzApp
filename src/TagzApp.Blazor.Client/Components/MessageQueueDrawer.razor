@@ -1,0 +1,91 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+
+@*
+
+A component that hides off the left side of the screen and can be toggled open and closed.
+It is used to display messages to the user.
+
+*@
+
+<div id="queueDrawer" class="@slideState">
+
+	<div id="queueDrawerContent">
+		<div id="queueDrawerBody">
+			<div id="queueDrawerBodyContent">
+
+				@if (Queue.Count > 0)
+				{
+					<ul>
+						@foreach (var queueItem in Queue)
+						{
+							<li>
+								@((MarkupString)(queueItem.Content.FormatContentWithEmotes()))
+								@* <button onclick="@(async () => await RemoveFromQueue(queueItem))">Remove</button> *@
+							</li>
+						}
+					</ul>
+				}
+				else
+				{
+					<p>Queue is empty</p>
+				}
+			</div>
+		</div>
+	</div>
+
+	<div id="queueDrawerHandle" @onclick="toggleOpenDrawer">
+		<div id="queueDrawerHandleIcon">
+			<i class="bi bi-grip-vertical"></i>
+		</div>
+	</div>
+
+</div>
+
+@code {
+
+	[CascadingParameter()]
+	public IHasSignalRConnection ConnectionProvider { get; set; } = null!;
+
+	public List<QueueItem> Queue { get; set; } = new List<QueueItem>();
+
+	private string slideState = string.Empty;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await base.OnInitializedAsync();
+
+		ConnectionProvider.Connection.On<QueueItem>("NewQueueItem", (queueItem) =>
+		{
+			Queue.Add(queueItem);
+			StateHasChanged();
+		});
+
+		ConnectionProvider.Connection.On<QueueItem>("MarkQueueItemAsCompleted", (queueItem) =>
+		{
+			Queue.Remove(queueItem);
+			StateHasChanged();
+		});
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+
+		if (firstRender) 
+		{
+			// Get the list of incompletequeueitems from the ConnectionProvider
+			var items = await ConnectionProvider.Connection.InvokeAsync<QueueItem[]>("GetIncompleteQueueItems");
+			Queue.AddRange(items);
+		}
+
+		await base.OnAfterRenderAsync(firstRender);
+
+	}
+
+	private void toggleOpenDrawer() => slideState = slideState switch
+	{
+		"slideIn" => "slideOut",
+		"slideOut" => "slideIn",
+		_ => "slideIn"
+	};
+
+}

@@ -4,6 +4,7 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
+@implements IHasSignalRConnection
 
 @if (!_Content.Any())
 {
@@ -41,7 +42,7 @@ else
 
 	private HashSet<dynamic> _PauseQueue = new();
 
-	HubConnection _Connection = null!;
+	public HubConnection Connection { get; set; } = null!;
 
 	[Parameter, EditorRequired]
 	public string TagTracked { get; set; }
@@ -51,7 +52,7 @@ else
 
 		await StartSignalRHub();
 
-		var existingContent = await _Connection.InvokeAsync<IEnumerable<ContentModel>>("GetExistingContentForTag", TagTracked);
+		var existingContent = await Connection.InvokeAsync<IEnumerable<ContentModel>>("GetExistingContentForTag", TagTracked);
 
 		// Console.WriteLine($"Received {existingContent.Count()} messages for tag {TagTracked}");
 
@@ -82,11 +83,11 @@ else
 
 	private async Task StartSignalRHub()
 	{
-		_Connection = new HubConnectionBuilder()
+		Connection = new HubConnectionBuilder()
 			.WithUrl(NavigationManager.ToAbsoluteUri($"/messages?t={TagTracked}"))
 			.Build();
 
-		_Connection.On<ContentModel>("NewWaterfallMessage", (content) =>
+		Connection.On<ContentModel>("NewWaterfallMessage", (content) =>
 		{
 
 			if (thePauseButton.IsPaused)
@@ -100,7 +101,7 @@ else
 			StateHasChanged();
 		});
 
-		_Connection.On<string, string>("RemoveMessage", (provider, providerId) =>
+		Connection.On<string, string>("RemoveMessage", (provider, providerId) =>
 		{
 
 			// NOTE: Remove messages immediately from the waterfall regardless of pause state
@@ -115,14 +116,14 @@ else
 
 		});
 
-		await _Connection.StartAsync();
+		await Connection.StartAsync();
 	}
 
 	async Task ShowModal(ContentModel content)
 	{
 
 		ModalContent = content;
-		await _Connection.InvokeAsync("SendMessageToOverlay", TagTracked, content.Provider, content.ProviderId);
+		await Connection.InvokeAsync("SendMessageToOverlay", TagTracked, content.Provider, content.ProviderId);
 		await Modal.Open();
 
 	}
@@ -148,8 +149,8 @@ else
 
 	public ValueTask DisposeAsync()
 	{
-		if (_Connection is null) return ValueTask.CompletedTask;
-		return _Connection.DisposeAsync();
+		if (Connection is null) return ValueTask.CompletedTask;
+		return Connection.DisposeAsync();
 		// return ValueTask.CompletedTask;
 	}
 

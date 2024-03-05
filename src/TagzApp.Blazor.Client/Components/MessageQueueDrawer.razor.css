@@ -1,0 +1,57 @@
+#queueDrawer {
+	position: absolute;
+	width: 20em;
+	left: -20em;
+	z-index: 100;
+	padding: 5px;
+	background-color: grey;
+	border-top-right-radius: 5px;
+	border-bottom-right-radius: 5px;
+}
+
+#queueDrawer ul {
+	list-style-type: none;
+	padding: 0;
+}
+
+#queueDrawer li {
+	list-style-type: none;
+	font-size: 0.7em;
+}
+
+#queueDrawer #queueDrawerHandle {
+	position:absolute;
+	right:-1em;
+	background-color: grey;
+	top: calc(50% - 1.15em);
+	padding: 0.5em 0;
+	border-top-right-radius: 0.5em;
+	border-bottom-right-radius: 0.5em;
+	cursor: pointer;
+}
+
+.slideIn {
+	animation: slideIn 0.5s forwards;
+}
+
+.slideOut {
+	animation: slideOut 0.5s forwards;
+}
+
+@keyframes slideIn {
+	from {
+		left: -20em;
+	}
+	to {
+		left: 0;
+	}
+}
+
+@keyframes slideOut {
+	from {
+		left: 0;
+	}
+	to {
+		left: -20em;
+	}
+}

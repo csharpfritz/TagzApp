@@ -8,13 +8,13 @@ public class TagzAppContext : DbContext
 	{
 	}
 
+	public DbSet<PgBlockedUser> BlockedUsers { get; set; }
+
 	public DbSet<PgContent> Content { get; set; }
 
 	public DbSet<PgModerationAction> ModerationActions { get; set; }
 
-	public DbSet<PgBlockedUser> BlockedUsers { get; set; }
-
-	//public DbSet<Settings> Settings => Set<Settings>();
+	public DbSet<PgQueueItem> QueueItems { get; set; }
 
 	public DbSet<Tag> TagsWatched { get; set; }
 
@@ -25,6 +25,8 @@ public class TagzAppContext : DbContext
 		modelBuilder.Entity<PgContent>().HasOne(c => c.ModerationAction).WithOne(m => m.Content).HasForeignKey<PgModerationAction>(m => m.ContentId);
 
 		modelBuilder.Entity<PgModerationAction>().HasAlternateKey(c => new { c.Provider, c.ProviderId });
+
+		modelBuilder.Entity<PgQueueItem>().HasKey(q => new { q.Provider, q.ProviderId});
 
 		modelBuilder.Entity<Tag>().Property(t => t.Text)
 			.HasMaxLength(50)
