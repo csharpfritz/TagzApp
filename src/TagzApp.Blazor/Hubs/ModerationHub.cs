@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
-using System.Reflection.Metadata;
-using TagzApp.Blazor.Components.Admin.Pages;
 using TagzApp.ViewModels.Data;
 
 namespace TagzApp.Blazor.Hubs;
@@ -131,7 +129,7 @@ public class ModerationHub : Hub<IModerationClient>
 	public async Task BlockUser(string authorUserName, string provider)
 	{
 		var thisUser = await _UserManager.GetUserAsync(Context.User);
-		await _Repository.BlockUser(authorUserName, provider,thisUser?.NormalizedUserName ?? thisUser.Email, new DateTimeOffset(new DateTime(2050,1,1), TimeSpan.Zero));
+		await _Repository.BlockUser(authorUserName, provider, thisUser?.NormalizedUserName ?? thisUser.Email, new DateTimeOffset(new DateTime(2050, 1, 1), TimeSpan.Zero));
 	}
 
 	// Add Message to the Queue in ModerationRepository

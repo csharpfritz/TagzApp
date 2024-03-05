@@ -21,8 +21,8 @@
 	padding: 1rem 1rem;
 	padding-bottom: 1rem;
 	border-bottom: 1px solid #dee2e6;
-	border-top-left-radius: calc(.3rem - 1px);
-	border-top-right-radius: calc(.3rem - 1px);
+	border-top-left-radius: calc(0.3rem - 1px);
+	border-top-right-radius: calc(0.3rem - 1px);
 }
 
 .card-body {
@@ -41,4 +41,3 @@
 	display: flex;
 	justify-content: space-between;
 }
-
