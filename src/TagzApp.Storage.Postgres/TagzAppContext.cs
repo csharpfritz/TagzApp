@@ -26,7 +26,7 @@ public class TagzAppContext : DbContext
 
 		modelBuilder.Entity<PgModerationAction>().HasAlternateKey(c => new { c.Provider, c.ProviderId });
 
-		modelBuilder.Entity<PgQueueItem>().HasKey(q => new { q.Provider, q.ProviderId});
+		modelBuilder.Entity<PgQueueItem>().HasKey(q => new { q.Provider, q.ProviderId });
 
 		modelBuilder.Entity<Tag>().Property(t => t.Text)
 			.HasMaxLength(50)

@@ -48,20 +48,21 @@ public partial class MessageDetails
 
 	}
 
-		async Task UpdateMessageOnQueue()
+	async Task UpdateMessageOnQueue()
+	{
+
+		System.Console.WriteLine($"Adding to Queue: {AddedToQueue}");
+
+		if (!AddedToQueue)
 		{
 
-			System.Console.WriteLine($"Adding to Queue: {AddedToQueue}");
-
-			if (!AddedToQueue) {
-
-				// Connect to the SignalR hub
-				await ModerationPage.Connection.InvokeAsync("AddToQueue", Model.Provider, Model.ProviderId, "");
-				ValidationMessage = $"Added message with ID {Model.ProviderId} to the queue for {Model.Provider.ToLowerInvariant().Humanize(LetterCasing.Title)}";
-
-			}
+			// Connect to the SignalR hub
+			await ModerationPage.Connection.InvokeAsync("AddToQueue", Model.Provider, Model.ProviderId, "");
+			ValidationMessage = $"Added message with ID {Model.ProviderId} to the queue for {Model.Provider.ToLowerInvariant().Humanize(LetterCasing.Title)}";
 
 		}
+
+	}
 
 	public async Task Open()
 	{

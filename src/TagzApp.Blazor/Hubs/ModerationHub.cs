@@ -138,7 +138,8 @@ public class ModerationHub : Hub<IModerationClient>
 		await _Repository.AddToQueue(provider, providerId, speakerNotes);
 
 		var thisQueueItem = await _Repository.GetItemFromQueue(provider, providerId);
-		await Clients.All.NewQueueItem(new ViewModels.Data.QueueItem {
+		await Clients.All.NewQueueItem(new ViewModels.Data.QueueItem
+		{
 			Content = (ContentModel)thisQueueItem.Content,
 			SpeakerNotes = thisQueueItem.SpeakerNotes,
 			IsCompleted = thisQueueItem.IsCompleted,
@@ -158,7 +159,8 @@ public class ModerationHub : Hub<IModerationClient>
 	{
 		var queueItems = await _Repository.GetQueueItems();
 		return queueItems.Select(q =>
-			new ViewModels.Data.QueueItem {
+			new ViewModels.Data.QueueItem
+			{
 				Content = (ContentModel)q.Content,
 				SpeakerNotes = q.SpeakerNotes,
 				IsCompleted = q.IsCompleted,
@@ -172,7 +174,8 @@ public class ModerationHub : Hub<IModerationClient>
 	{
 		var queueItems = await _Repository.GetIncompleteQueueItems();
 		return queueItems.Select(q =>
-			new ViewModels.Data.QueueItem {
+			new ViewModels.Data.QueueItem
+			{
 				Content = (ContentModel)q.Content,
 				SpeakerNotes = q.SpeakerNotes,
 				IsCompleted = q.IsCompleted,

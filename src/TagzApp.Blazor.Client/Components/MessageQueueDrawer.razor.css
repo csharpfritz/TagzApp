@@ -20,8 +20,8 @@
 }
 
 #queueDrawer #queueDrawerHandle {
-	position:absolute;
-	right:-1em;
+	position: absolute;
+	right: -1em;
 	background-color: grey;
 	top: calc(50% - 1.15em);
 	padding: 0.5em 0;
