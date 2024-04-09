@@ -63,7 +63,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TagzApp.Providers.Bluesky",
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ZZ. Archive", "ZZ. Archive", "{940E2AF6-DD9B-44E9-A4AD-1DC0CA73964A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TagzApp.TwitchRelay", "TagzApp.TwitchRelay\TagzApp.TwitchRelay.csproj", "{A64B6AB5-2F9E-4FBD-A622-49598B904E64}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TagzApp.TwitchRelay", "TagzApp.TwitchRelay\TagzApp.TwitchRelay.csproj", "{A64B6AB5-2F9E-4FBD-A622-49598B904E64}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3. Desktop App", "3. Desktop App", "{FFD24E7F-9491-48C7-AC30-F9521BCD80AA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TagzApp.Standalone", "TagzApp.Standalone\TagzApp.Standalone.csproj", "{65E6EE6E-F2A0-4322-94F2-C4E14DCEA306}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -159,6 +163,12 @@ Global
 		{A64B6AB5-2F9E-4FBD-A622-49598B904E64}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A64B6AB5-2F9E-4FBD-A622-49598B904E64}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A64B6AB5-2F9E-4FBD-A622-49598B904E64}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65E6EE6E-F2A0-4322-94F2-C4E14DCEA306}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65E6EE6E-F2A0-4322-94F2-C4E14DCEA306}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65E6EE6E-F2A0-4322-94F2-C4E14DCEA306}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{65E6EE6E-F2A0-4322-94F2-C4E14DCEA306}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65E6EE6E-F2A0-4322-94F2-C4E14DCEA306}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65E6EE6E-F2A0-4322-94F2-C4E14DCEA306}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -186,6 +196,7 @@ Global
 		{6751D128-B522-4C1A-9B37-5271C0E6C263} = {370455D5-6EA6-44C1-B315-B621F7B6A954}
 		{8E5E8ED0-7261-45E0-AE2A-22975FD1EDA5} = {99E0BB3F-9591-4C7A-A8EE-C54B0C3DE7A5}
 		{A64B6AB5-2F9E-4FBD-A622-49598B904E64} = {370455D5-6EA6-44C1-B315-B621F7B6A954}
+		{65E6EE6E-F2A0-4322-94F2-C4E14DCEA306} = {FFD24E7F-9491-48C7-AC30-F9521BCD80AA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F2AD77A5-5B2D-41FC-AD37-8EF8A4E54410}
