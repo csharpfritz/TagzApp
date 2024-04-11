@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dotnet/Nerdbank.GitVersioning/master/src/NerdBank.GitVersioning/version.schema.json",
+  "version": "0.4.0-0.5.0",
+  "publicReleaseRefSpec": [
+    "^refs/heads/main$",
+    "^refs/tags/v\\d+\\.\\d+"
+  ],
+  "release": {
+    "firstUnstableTag": "pre"
+  }
+}
