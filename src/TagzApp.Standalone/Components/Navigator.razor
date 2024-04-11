@@ -1,0 +1,15 @@
+@inject TagzApp.Standalone.NavigatorService NavSvc
+@inject NavigationManager NavigationManager
+
+@code {
+
+	protected override Task OnInitializedAsync()
+	{
+
+		NavSvc.NavigationManager = NavigationManager;
+
+		return base.OnInitializedAsync();
+	}
+
+
+}

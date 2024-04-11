@@ -6,9 +6,30 @@
              BackgroundColor="{DynamicResource PageBackgroundColor}">
 
 		<!-- Add Menu -->
-		
+	<ContentPage.MenuBarItems>
+		<MenuBarItem Text="Content">
+			<MenuFlyoutItem Text="Home" Clicked="MenuItem_Clicked"></MenuFlyoutItem>
+			<MenuFlyoutItem Text="Waterfall View" Clicked="MenuItem_Clicked"></MenuFlyoutItem>
+			<MenuFlyoutItem Text="Moderation" Clicked="MenuItem_Clicked"></MenuFlyoutItem>
+			<MenuFlyoutSeparator />
+			<MenuFlyoutItem Text="Overlay" Clicked="MenuItem_Clicked"></MenuFlyoutItem>
+			<MenuFlyoutItem Text="Portrait Overlay" Clicked="MenuItem_Clicked"></MenuFlyoutItem>
+		</MenuBarItem>
 
-    <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
+		<MenuBarItem Text="Admin">
+			<MenuFlyoutItem Text="Search Config" Clicked="MenuItem_Clicked"></MenuFlyoutItem>
+			<MenuFlyoutSeparator />
+			<MenuFlyoutItem Text="Blocked Users" Clicked="MenuItem_Clicked"></MenuFlyoutItem>
+			<MenuFlyoutSeparator />
+			<MenuFlyoutItem Text="Providers" Clicked="MenuItem_Clicked"></MenuFlyoutItem>
+			<MenuFlyoutItem Text="Waterfall Customization" Clicked="MenuItem_Clicked"></MenuFlyoutItem>
+			<MenuFlyoutItem Text="Modal Customization" Clicked="MenuItem_Clicked"></MenuFlyoutItem>
+
+		</MenuBarItem>
+	
+	</ContentPage.MenuBarItems>
+
+	<BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>
             <RootComponent Selector="#app" ComponentType="{x:Type local:Components.Routes}" />
         </BlazorWebView.RootComponents>

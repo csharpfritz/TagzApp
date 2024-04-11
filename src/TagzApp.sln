@@ -67,7 +67,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TagzApp.TwitchRelay", "Tagz
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3. Desktop App", "3. Desktop App", "{FFD24E7F-9491-48C7-AC30-F9521BCD80AA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TagzApp.Standalone", "TagzApp.Standalone\TagzApp.Standalone.csproj", "{65E6EE6E-F2A0-4322-94F2-C4E14DCEA306}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TagzApp.Standalone", "TagzApp.Standalone\TagzApp.Standalone.csproj", "{65E6EE6E-F2A0-4322-94F2-C4E14DCEA306}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

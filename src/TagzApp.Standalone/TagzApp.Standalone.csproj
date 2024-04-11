@@ -72,4 +72,10 @@
       <ProjectReference Include="..\TagzApp.Communication\TagzApp.Communication.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <MauiXaml Update="AppShell.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </MauiXaml>
+    </ItemGroup>
+
 </Project>
