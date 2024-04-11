@@ -18,16 +18,21 @@ public partial class MainPage : ContentPage
 	{
 
 		var menuItem = (MenuItem)sender;
-		var url = menuItem.Text switch {
-			"Home"		=> "/",
-			_					=> "/page2"
+		var url = menuItem.Text switch
+		{
+			"Home" => "/",
+			_ => "/page2"
 		};
 
-		using var scope = Services.CreateScope();
-		var navMgr = scope.ServiceProvider.GetRequiredService<NavigatorService>();
-		navMgr.NavigateTo(url);
+		using IServiceScope scope = NavigateWebViewTo(url);
 
 	}
 
-
+	private IServiceScope NavigateWebViewTo(string url)
+	{
+		var scope = Services.CreateScope();
+		var navMgr = scope.ServiceProvider.GetRequiredService<NavigatorService>();
+		navMgr.NavigateTo(url);
+		return scope;
+	}
 }

@@ -1,5 +1,5 @@
 ﻿global using TagzApp.Common;
-
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using TagzApp.Common.Models;
 
@@ -18,7 +18,8 @@ public static class MauiProgram
 
 		builder.Services.AddMauiBlazorWebView();
 
-		builder.Services.AddScoped<ApplicationConfiguration>();
+		builder.AddTagzApp();
+
 		builder.Services.AddSingleton<NavigatorService>();
 		builder.Services.AddSingleton<MainPage>();
 
