@@ -1,11 +1,14 @@
 ﻿@page "/admin/uicustomization"
 @using PSC.Blazor.Components.MarkdownEditor
 @using PSC.Blazor.Components.MarkdownEditor.Enums
+@attribute [Authorize(Roles = RolesAndPolicies.Role.Admin)]
 @layout AdminLayout
 @inject ApplicationConfiguration ApplicationConfiguration
 @inject IJSRuntime JSRuntime
+@inject ToastService ToastService
 @rendermode InteractiveServer
 
+<PageTitle>System Administration: UI Customization</PageTitle>
 
 <dl>
 
@@ -18,6 +21,16 @@
 			<InputRadio Value="true" />Enabled
 			<InputRadio Value="false" />Disabled
 		</InputRadioGroup>
+	</dd>
+
+
+	<dt><label for="StreamStart">Stream Start Timestamp:</label></dt>
+	<dd>
+		<input type="datetime-local" @bind="@ApplicationConfiguration.StreamStart" />
+
+		<button class="btn btn-primary"	
+			@onclick="() => ApplicationConfiguration.StreamStart = DateTime.Now">Now</button>
+
 	</dd>
 
 	<dt><label for="WaterfallHeaderCss">Waterfall header CSS:</label></dt>
@@ -60,9 +73,8 @@
 
 	async Task SaveChanges()
 	{
-
 		await ApplicationConfiguration.SaveConfiguration(ConfigureTagzAppFactory.Current);
-
+		ToastService.Add("Configuration Saved", MessageSeverity.Success);
 	}
 
 }

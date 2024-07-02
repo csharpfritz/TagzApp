@@ -1,6 +1,9 @@
 ﻿// Ignore Spelling: Tagz
 
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Npgsql;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -19,25 +22,38 @@ public static class ConfigureTagzAppFactory
 
 		if (Current != EmptyConfigureTagzApp.Instance) { return Current; }
 
-		// Get AppConfigConnection and AppConfigProvider from standard IConfiguration in the ConnectionStrings section
-		var connectionString = configuration.GetConnectionString("AppConfigConnection");
-		var provider = configuration.GetConnectionString("AppConfigProvider");
 		Current = EmptyConfigureTagzApp.Instance;
 
-		if (provider?.Equals("inmemory", StringComparison.InvariantCultureIgnoreCase) ?? false)
+		Current = new DbConfigureTagzApp();
+		var connectionString = configuration.GetConnectionString("tagzappdb");
+
+		try
 		{
-
-			CreateInMemoryProvider();
-
-		}
-		else if (!string.IsNullOrEmpty(connectionString) &&
-			!string.IsNullOrEmpty(provider) &&
-			DbConfigureTagzApp.SupportedDbs.Any(db => db.Equals(provider, StringComparison.InvariantCultureIgnoreCase)))
-		{
-
-			Current = new DbConfigureTagzApp();
-			Current.InitializeConfiguration(provider, connectionString);
+			Current.InitializeConfiguration("", connectionString);
+			Current.SetConfigurationById<ConnectionSettings>(ConnectionSettings.ConfigurationKey, new ConnectionSettings
+			{
+				ContentProvider = "postgres",
+				SecurityProvider = "postgres",
+			}).GetAwaiter().GetResult();
 			IsConfigured = true;
+		}
+		catch (Exception ex)
+		{
+			// log the exception
+			var cfg = EmptyConfigureTagzApp.Instance;
+
+			cfg.Message = ex.InnerException switch
+			{
+				NpgsqlException => ex.Message,
+				_ => $"Unable to initialize database configuration provider"
+			};
+
+			Current = cfg;
+			IsConfigured = false;
+
+			var scope = services.CreateScope();
+			var logger = scope.ServiceProvider.GetRequiredService<ILogger<DbConfigureTagzApp>>();
+			logger.LogError(ex, "Unable to initialize configuration provider");
 
 		}
 
@@ -62,6 +78,14 @@ public static class ConfigureTagzAppFactory
 			AllowTrailingCommas = true,
 			CommentHandling = JsonCommentHandling.Skip
 		});
+
+		if (jsonObj["ConnectionStrings"] is null)
+		{
+
+			jsonObj["ConnectionStrings"] = new JsonObject();
+
+		}
+
 		jsonObj["ConnectionStrings"]["AppConfigProvider"] = provider;
 		jsonObj["ConnectionStrings"]["AppConfigConnection"] = configurationString;
 

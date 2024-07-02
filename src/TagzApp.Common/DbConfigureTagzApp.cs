@@ -2,6 +2,7 @@
 
 using Dapper;
 using Microsoft.Data.Sqlite;
+using Npgsql;
 using System.Data;
 using System.Text.Json;
 
@@ -47,7 +48,19 @@ public class DbConfigureTagzApp : IConfigureTagzApp, IDisposable
 		_ConnectionString = connectionString;
 
 		using var conn = GetConnection(providerName, connectionString);
-		conn.Open();
+
+		try
+		{
+			conn.Open();
+		}
+		catch (NpgsqlException ex)
+		{
+			throw new Exception($"Unable to connect to configuration Postgres database: {ex.Message}", ex);
+		}
+		catch (Exception ex)
+		{
+			throw new Exception("Unable to connect to configuration database", ex);
+		}
 
 		CreateConfigTable(conn, providerName);
 
@@ -71,12 +84,7 @@ public class DbConfigureTagzApp : IConfigureTagzApp, IDisposable
 	private static IDbConnection GetConnection(string providerName, string connectionString)
 	{
 
-		return providerName.ToLowerInvariant() switch
-		{
-			"sqlite" => new SqliteConnection(connectionString),
-			"postgres" => new Npgsql.NpgsqlConnection(connectionString),
-			_ => throw new NotImplementedException()
-		};
+		return new Npgsql.NpgsqlConnection(connectionString);
 
 	}
 

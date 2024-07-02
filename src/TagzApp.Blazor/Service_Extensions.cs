@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using TagzApp.Blazor.Client.Services;
 using TagzApp.Blazor.Components.Account;
 using TagzApp.Blazor.Services;
 
@@ -10,47 +11,48 @@ namespace TagzApp.Blazor;
 public static class Service_Extensions
 {
 
-	public static async Task<IServiceCollection> AddTagzAppHostedServices(this IServiceCollection services, IConfigureTagzApp configureTagzApp)
+	public static async Task<IServiceCollection> AddTagzAppHostedServices(this WebApplicationBuilder builder, IConfigureTagzApp configureTagzApp)
 	{
 
 		// TODO: Convert to a notification pipeline
-		services.AddSingleton<INotifyNewMessages, SignalRNotifier>();
+		builder.Services.AddSingleton<INotifyNewMessages, SignalRNotifier>();
+		builder.Services.AddScoped<ToastService>();
 
-		services.AddMemoryCache();
+		builder.Services.AddMemoryCache();
 
 		// Get the content configuration bits
 		var connectionSettings = await configureTagzApp.GetConfigurationById<ConnectionSettings>(ConnectionSettings.ConfigurationKey);
 
 		if (connectionSettings.ContentProvider.Equals("postgres", StringComparison.InvariantCultureIgnoreCase))
 		{
-			services.AddPostgresServices(configureTagzApp, connectionSettings);
+			builder.AddPostgresServices(configureTagzApp, connectionSettings);
 		}
 		else
 		{
-			services.AddSingleton<IMessagingService, InMemoryMessagingService>();
-			services.AddHostedService(s => s.GetRequiredService<IMessagingService>());
+			builder.Services.AddSingleton<IMessagingService, InMemoryMessagingService>();
+			builder.Services.AddHostedService(s => s.GetRequiredService<IMessagingService>());
 		}
 
-		return services;
+		return builder.Services;
 	}
 
 
 
-	public static async Task<IServiceCollection> AddTagzAppSecurity(this IServiceCollection services, IConfigureTagzApp configure, IConfiguration configuration)
+	public static async Task<IServiceCollection> AddTagzAppSecurity(this IHostApplicationBuilder builder, IConfigureTagzApp configure, IConfiguration configuration)
 	{
 
 		if (ConfigureTagzAppFactory.IsConfigured)
 		{
 
 			// Stash a copy of the configuration in the services collection
-			services.AddSingleton(configure);
+			builder.Services.AddSingleton(configure);
 
-			services.AddCascadingAuthenticationState();
-			services.AddScoped<IdentityUserAccessor>();
-			services.AddScoped<IdentityRedirectManager>();
-			services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
+			builder.Services.AddCascadingAuthenticationState();
+			builder.Services.AddScoped<IdentityUserAccessor>();
+			builder.Services.AddScoped<IdentityRedirectManager>();
+			builder.Services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
 
-			services.AddAuthentication(options =>
+			builder.Services.AddAuthentication(options =>
 			{
 				options.DefaultScheme = IdentityConstants.ApplicationScheme;
 				options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
@@ -58,15 +60,15 @@ public static class Service_Extensions
 					.AddExternalProviders(configuration)
 					.AddIdentityCookies();
 
-			await services.AddSecurityContext(configure);
-			services.AddDatabaseDeveloperPageExceptionFilter();
+			await builder.AddSecurityContext(configure);
+			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-			services.AddDataProtection()
+			builder.Services.AddDataProtection()
 				.SetApplicationName("TagzApp")
 				.SetDefaultKeyLifetime(TimeSpan.FromDays(90))
 				.PersistKeysToDbContext<SecurityContext>();
 
-			services.AddIdentityCore<TagzAppUser>(options =>
+			builder.Services.AddIdentityCore<TagzAppUser>(options =>
 									options.SignIn.RequireConfirmedAccount = true
 							)
 							.AddRoles<IdentityRole>()
@@ -74,51 +76,68 @@ public static class Service_Extensions
 							.AddSignInManager()
 							.AddDefaultTokenProviders();
 
-			services.AddSingleton<IEmailSender<TagzAppUser>, IdentityNoOpEmailSender>();
+			builder.Services.AddSingleton<IEmailSender<TagzAppUser>, IdentityNoOpEmailSender>();
 
-
-			services.AddAuthorization(config =>
-			{
-				config.AddPolicy(RolesAndPolicies.Policy.AdminRoleOnly, policy => { policy.RequireRole(RolesAndPolicies.Role.Admin); });
-				config.AddPolicy(RolesAndPolicies.Policy.Moderator,
-								policy => { policy.RequireAuthenticatedUser(); });
-			});
 
 		}
 
-		return services;
+		builder.Services.AddAuthorization(config =>
+		{
+			config.AddPolicy(RolesAndPolicies.Policy.AdminRoleOnly, policy => { policy.RequireRole(RolesAndPolicies.Role.Admin); });
+			config.AddPolicy(RolesAndPolicies.Policy.Moderator,
+							policy => { policy.RequireRole(RolesAndPolicies.Role.Moderator, RolesAndPolicies.Role.Admin); });
+		});
+
+		return builder.Services;
 
 	}
 
-	public static async Task AddSecurityContext(this IServiceCollection services, IConfigureTagzApp configuration)
+	public static async Task AddSecurityContext(this IHostApplicationBuilder builder, IConfigureTagzApp configuration)
 	{
 
 		var connectionSettings = await configuration.GetConfigurationById<ConnectionSettings>(ConnectionSettings.ConfigurationKey);
 		if (connectionSettings.SecurityProvider.Equals("postgres", StringComparison.InvariantCultureIgnoreCase))
 		{
 
-			services.AddPostgresSecurityServices(connectionSettings);
+			builder.AddPostgresSecurityServices(connectionSettings);
 
 		}
-		else if (connectionSettings.SecurityProvider.Equals("sqlite", StringComparison.InvariantCultureIgnoreCase))
-		{
 
-			services.AddDbContext<SecurityContext>(options =>
-			{
-				options.UseSqlite(connectionSettings.SecurityConnectionString);
-			});
+		// NOTE: In web app, only using Postgres
 
-		}
-		else
-		{
+		//else if (connectionSettings.SecurityProvider.Equals("sqlite", StringComparison.InvariantCultureIgnoreCase))
+		//{
 
-			// Add the in-memory provider
-			services.AddDbContext<SecurityContext>(options =>
-			{
-				options.UseInMemoryDatabase("tagzapp");
-			});
+		//	services.AddDbContext<SecurityContext>(options =>
+		//	{
+		//		options.UseSqlite(connectionSettings.SecurityConnectionString, opt =>
+		//		{
+		//			opt.MigrationsAssembly(typeof(TagzApp.Storage.Sqlite.Security.SecurityContextModelSnapshot).Assembly.FullName);
+		//		});
+		//	});
 
-		}
+		//	var serviceLocator = services.BuildServiceProvider();
+		//	var securityContext = serviceLocator.GetRequiredService<TagzApp.Security.SecurityContext>();
+		//	try
+		//	{
+		//		securityContext.Database.Migrate();
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		Console.WriteLine($"Error while migrating security context to Postgres: {ex}");
+		//	}
+
+		//}
+		//else
+		//{
+
+		//	// Add the in-memory provider
+		//	services.AddDbContext<SecurityContext>(options =>
+		//	{
+		//		options.UseInMemoryDatabase("tagzapp");
+		//	});
+
+		//}
 
 	}
 

@@ -11,6 +11,7 @@ public class ApplicationConfiguration
 	private string _WaterfallHeaderMarkdown = "# Welcome to TagzApp";
 	private string _WaterfallHeaderCss = string.Empty;
 	private bool _ModerationEnabled = false;
+	private bool _SingleUserMode = true;
 
 	private string _YouTubeChatConfig = "{}";
 
@@ -24,6 +25,15 @@ public class ApplicationConfiguration
 		}
 	}
 
+	public bool SingleUserMode
+	{
+		get => _SingleUserMode;
+		set
+		{
+			if (_SingleUserMode) _SingleUserMode = value;
+		}
+	}
+
 	[Required, MaxLength(30)]
 	public string SiteName
 	{
@@ -34,6 +44,8 @@ public class ApplicationConfiguration
 			_SiteName = value;
 		}
 	}
+
+	public DateTimeOffset StreamStart { get; set; } = DateTimeOffset.MinValue;
 
 	[Required]
 	public string WaterfallHeaderMarkdown

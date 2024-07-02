@@ -1,8 +1,10 @@
 @page "/admin/providers"
+@attribute [Authorize(Roles = RolesAndPolicies.Role.Admin)]
 @rendermode InteractiveServer
-@using System.Reflection
 @layout Admin.Shared.AdminLayout
 @inject IMessagingService messagingService
+
+<PageTitle>System Administration: Provider Management</PageTitle>
 
 <h2>Provider Management</h2>
 

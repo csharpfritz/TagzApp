@@ -1,19 +1,11 @@
 ﻿@page "/Admin/Index"
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = RolesAndPolicies.Role.Admin)]
+@attribute [Authorize(Roles = "Admin")]
+@inject NavigationManager NavigationManager
 @layout Admin.Shared.AdminLayout
 
+<PageTitle>System Administration</PageTitle>
 
 <h2>Hashtag to watch</h2>
 
 <TagSearch />
-
-@code {
-
-	protected override Task OnInitializedAsync()
-	{
-
-		return base.OnInitializedAsync();
-	}
-
-}

@@ -1,6 +1,7 @@
 global using TagzApp.Security;
-
+using BlazorDownloadFile;
 using Microsoft.AspNetCore.HttpOverrides;
+using System.Security.Claims;
 using TagzApp.Blazor;
 using TagzApp.Blazor.Hubs;
 using TagzApp.Communication.Extensions;
@@ -51,7 +52,14 @@ internal class Program
 
 		var builder = WebApplication.CreateBuilder(args);
 
-		var configure = ConfigureTagzAppFactory.Create(builder.Configuration, null);
+		// Configure the Aspire provided service defaults
+		builder.AddServiceDefaults();
+
+		var configure = ConfigureTagzAppFactory.Create(builder.Configuration, builder.Services.BuildServiceProvider());
+
+		// Add OpenTelemetry for tracing and metrics.
+		// NOTE: Shifting to using the Aspire service defaults
+		//builder.Services.AddOpenTelemetryObservability(builder.Configuration);
 
 		var appConfig = await ApplicationConfiguration.LoadFromConfiguration(configure);
 		builder.Services.AddSingleton(appConfig);
@@ -64,25 +72,18 @@ internal class Program
 				.AddInteractiveServerComponents()
 				.AddInteractiveWebAssemblyComponents();
 
-		await builder.Services.AddTagzAppSecurity(configure, builder.Configuration);
+		await builder.AddTagzAppSecurity(configure, builder.Configuration);
+		builder.Services.AddQuickGridEntityFrameworkAdapter();
 
-		await Console.Out.WriteLineAsync($">> TagzApp configured: {ConfigureTagzAppFactory.IsConfigured}");
+		//		await Console.Out.WriteLineAsync($">> TagzApp configured: {ConfigureTagzAppFactory.IsConfigured}");
 
 		builder.Services.AddSignalR();
+		builder.Services.AddBlazorDownloadFile(ServiceLifetime.Scoped);
 
 		builder.Services.AddHttpClientPolicies();
 		await builder.Services.AddTagzAppProviders();
 
-		await builder.Services.AddTagzAppHostedServices(configure);
-
-		// TODO: Convert from RazorPages policies to Blazor
-		//builder.Services.AddRazorPages(options =>
-		//{
-		//	options.Conventions.AuthorizeAreaFolder("Admin", "/", Security.Policy.AdminRoleOnly);
-		//	options.Conventions.AuthorizePage("/Moderation", Security.Policy.Moderator);
-		//	options.Conventions.AuthorizePage("/BlockedUsers", Security.Policy.Moderator);
-		//});
-
+		await builder.AddTagzAppHostedServices(configure);
 
 		// Configure the forwarded headers to allow Container hosting support
 		builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -94,6 +95,9 @@ internal class Program
 			options.KnownNetworks.Clear();
 			options.KnownProxies.Clear();
 		});
+
+		// Add OpenTelemetry for logging.
+		builder.Logging.AddOpenTelemetryLogging(builder.Configuration);
 
 		var app = builder.Build();
 
@@ -110,6 +114,25 @@ internal class Program
 			app.UseHsts();
 			app.UseResponseCompression();
 		}
+
+		app.Use((context, next) =>
+		{
+
+			// running in single-user mode -- the current user is an admin
+			if (appConfig.SingleUserMode)
+			{
+				context.User = new ClaimsPrincipal(
+					new ClaimsIdentity(new[] {
+						new Claim(ClaimTypes.Name, "Admin User"),
+						new Claim("DisplayName", "Admin User"),
+						new Claim(ClaimTypes.Role, RolesAndPolicies.Role.Admin)
+					}, "Basic"));
+			}
+
+			return next();
+
+		});
+
 
 		app.UseHttpsRedirection();
 

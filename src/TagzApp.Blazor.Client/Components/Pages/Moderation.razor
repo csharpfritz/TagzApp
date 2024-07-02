@@ -83,10 +83,14 @@
 		</div>
 
 	}
-	else
+	else if (_Loading)
 	{
 		<div class=" d-flex justify-content-center align-items-center" style="height: calc(100vh - 210px); text-align: center;">
 			<div class="spinner-border" role="status"> <span class="visually-hidden">Loading...</span> </div>
+		</div>
+	} else {
+		<div class=" d-flex justify-content-center align-items-center" style="height: calc(100vh - 210px); text-align: center;">
+			<div class="alert alert-danger" role="status"> No messages found that meet the filter criteria</div>
 		</div>
 	}
 
@@ -123,6 +127,7 @@
 	private IEnumerable<AvailableProvider> _Providers = Enumerable.Empty<AvailableProvider>();
 
 	private List<string> _FilteredProviders = [];
+	private bool _Loading = true;
 
 	private FilterModerationState _FilterApprovalStatus = FilterModerationState.All;
 
@@ -132,16 +137,20 @@
 		set
 		{
 			_FilterApprovalStatus = value;
+			_Loading = true;
 			_Content.Clear();
 			StateHasChanged();
 			FilterContent = InitializeContent().ContinueWith(async t => {
+				_Loading = false;
 				await InvokeAsync(StateHasChanged);
 				FilterContent = null;
 			});
 		}
 	}
 
-	public HubConnection Connection { get; set; }
+	private HubConnection _Connection;
+
+	private bool _IsDisposing = false;
 
 	string _Tag = string.Empty;
 
@@ -177,11 +186,35 @@
 	async Task ConfigureSignalRConnection()
 	{
 
-		Connection = new HubConnectionBuilder()
-						.WithUrl(NavigationManager.ToAbsoluteUri("/mod"))
+		_Connection = new HubConnectionBuilder()
+					.WithUrl(NavigationManager.ToAbsoluteUri("/mod"))
+					.WithAutomaticReconnect()
 					.Build();
 
 		await ListenForModerationContent();
+
+		_Connection.Closed += async _ => {
+
+			if (_IsDisposing) return;
+
+			while (!_IsDisposing)
+			{
+
+				await Task.Delay(2000);
+				try {
+	
+					await ConfigureSignalRConnection();
+
+				} catch (Exception ex)
+				{
+
+					Console.WriteLine($"Error while attempting to reconnect ({_Connection.State.ToString()}) to server: {ex.Message}");
+
+				}
+
+			}
+
+		};
 
 		await Connection.StartAsync();
 
@@ -306,13 +339,15 @@
 	{
 
 		var approvalStatus = (int)_FilterApprovalStatus;
-		var currentContent = (await Connection.InvokeAsync<IEnumerable<ModerationContentModel>>("GetFilteredContentByTag", _Tag, _FilteredProviders.ToArray(), approvalStatus.ToString()))
+		var currentContent = (await _Connection.InvokeAsync<IEnumerable<ModerationContentModel>>("GetFilteredContentByTag", _Tag, _FilteredProviders.ToArray(), approvalStatus))
 			.ToArray();
 
 		foreach (var content in currentContent.OrderByDescending(c => c.Timestamp).ToArray())
 		{
 			_Content.Add(content.Timestamp, content);
 		}
+
+		_Loading = false;
 
 	}
 
@@ -367,8 +402,10 @@
 		}
 
 		_Content.Clear();
+		_Loading = true;
 		StateHasChanged();
 		FilterContent = InitializeContent().ContinueWith(async t => {
+			_Loading = false;
 			await InvokeAsync(StateHasChanged);
 			FilterContent = null;
 		});
@@ -388,7 +425,8 @@
 	public async ValueTask DisposeAsync()
 	{
 
-		if (Connection is not null)
+		_IsDisposing = true;
+		if (_Connection is not null)
 		{
 			await Connection.DisposeAsync();
 		}
