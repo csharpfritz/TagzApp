@@ -94,7 +94,14 @@
 										<ul>
 											<li>
 												Block @Model.AuthorDisplayName on @Model.Provider.ToLowerInvariant().Humanize(LetterCasing.Title)
-												<button name="blockUser" @onclick="BlockUser">Go</button>
+												with @* Add an select for the enum BlockedUserCapabilities *@
+												<select name="blockedUserCapabilities" @bind="@BlockedUserCapabilities">
+													@foreach (var capability in Enum.GetValues(typeof(BlockedUserCapabilities)))
+													{
+														<option value="@capability">@capability</option>
+													}
+												</select>
+																			<button name="blockUser" @onclick="BlockUser">Go</button>
 											</li>
 											<li>
 												Add to Queue

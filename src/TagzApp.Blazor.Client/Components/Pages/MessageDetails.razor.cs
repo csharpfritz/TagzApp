@@ -24,6 +24,8 @@ public partial class MessageDetails
 
 	public bool AddedToQueue { get; set; } = false;
 
+	public BlockedUserCapabilities BlockedUserCapabilities { get; set; } = BlockedUserCapabilities.Moderated;
+
 	protected override async Task OnInitializedAsync()
 	{
 
