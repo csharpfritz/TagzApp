@@ -670,6 +670,13 @@ a {
 	filter: brightness(0) invert(1);
 }
 
+.messageDetails .btn-close {
+	float: right;
+	margin: 1em;
+}
+
+
+
 /* User grid */
 .UserGridNameColumn {
 	width: 20em;

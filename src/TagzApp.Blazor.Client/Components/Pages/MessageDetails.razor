@@ -4,7 +4,7 @@
 @if (Model is not null)
 {
 
-	<div class="modal @modalClass"
+	<div class="modal @modalClass messageDetails"
 			 id="contentModal" tabindex="-1"
 			 role="dialog"
 			 style="display: @modalDisplay; overflow-y: auto;"
@@ -15,49 +15,48 @@
 
 				<div class="modal-content" @onclick:stopPropagation="true">
 					<div class="m-header">
-						@* 					<div class="row">
-					<div class="col-12">
-					*@
-						<a href="@Model.AuthorProfileUri" target="_blank">
-							<img src="@Model.AuthorProfileImageUri" onerror="this.src='/img/user.jpg';" class="rounded-circle" style="margin-top: 20px; width: 50px; height: 50px;" />
-						</a>
-						<a href="@Model.AuthorProfileUri" target="_blank" style="margin-left: 40px;">
-							@Model.AuthorDisplayName
-						</a>
 						<button type="button" class="btn-close" data-dismiss="modal"
 										aria-label="Close" @onclick="Close">
 						</button>
-						@if (!Model.AuthorUserName.TrimStart('@').Equals(Model.AuthorDisplayName, StringComparison.CurrentCultureIgnoreCase))
-						{
-							<span style="width: 40px; display: block;"></span>
-							<span style="margin-left: 40px;">@Model.AuthorUserName</span>
-							<span></span>
-						}
-						else
-						{
-							<span></span>
-							<span></span>
-							<span></span>
-						}
-						@* 						</div>
+
+						<div id="messageDetailsHeader">
+							<a href="@Model.AuthorProfileUri" target="_blank">
+								<img src="@Model.AuthorProfileImageUri" onerror="this.src='/img/user.jpg';" class="rounded-circle" style="margin-top: 20px; margin-left: 20px; width: 50px; height: 50px;" />
+							</a>
+							<a href="@Model.AuthorProfileUri" target="_blank" style="margin-left: 40px;">
+								@Model.AuthorDisplayName
+							</a>
+							@if (!Model.AuthorUserName.TrimStart('@').Equals(Model.AuthorDisplayName, StringComparison.CurrentCultureIgnoreCase))
+							{
+								<span style="width: 40px; display: block;"></span>
+								<span style="margin-left: 40px;">@Model.AuthorUserName</span>
+								<span></span>
+							}
+							else
+							{
+								<span></span>
+								<span></span>
+								<span></span>
+							}
+
+							@if (Model.State != ModerationState.Pending)
+							{
+								<span></span>
+								<span style="margin-left: 40px;">
+									@Model.State.ToString()
+									@if (Model.State == ModerationState.Rejected || Model.State == ModerationState.Approved)
+									{
+										<text> by @Model.Moderator </text>
+									}
+									@if (!string.IsNullOrEmpty(Model.Reason))
+									{
+										<text> for @Model.Reason</text>
+									}
+								</span>
+								<span></span>
+							}
+
 					</div>
-					*@
-						@if (Model.State != ModerationState.Pending)
-						{
-							<span></span>
-							<span style="margin-left: 40px;">
-								@Model.State.ToString()
-								@if (Model.State == ModerationState.Rejected || Model.State == ModerationState.Approved)
-								{
-									<text> by @Model.Moderator </text>
-								}
-								@if (!string.IsNullOrEmpty(Model.Reason))
-								{
-									<text> for @Model.Reason</text>
-								}
-							</span>
-							<span></span>
-						}
 
 					</div>
 
