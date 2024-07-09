@@ -1,0 +1,49 @@
+﻿@inject ToastService ToastService
+@inject HttpClient Http
+@inject NavigationManager NavMgr
+@inject IConfiguration Config
+
+<UiProviderConfig ProviderName="YouTubeChat" Health="@Health" ProviderIconCssClass="bi-youtube">
+
+	<EditForm Model="Model" OnValidSubmit="SaveConfig">
+		<AntiforgeryToken />
+		<ValidationSummary />
+
+	</EditForm>
+
+</UiProviderConfig>
+
+@code {
+
+	[Parameter, EditorRequired]
+	public ISocialMediaProvider Provider { get; set; } = null!;
+
+	public (SocialMediaStatus Status, string Message) Health { get; set; } = (SocialMediaStatus.Unknown, string.Empty);
+
+	public string LoginUrl { get; set; } = "";
+
+	public ViewModel Model { get; set; } = new();
+
+	private async Task SaveConfig()
+	{
+
+		var providerConfiguration = await Provider.GetConfiguration(ConfigureTagzAppFactory.Current);
+
+		// providerConfiguration.SetConfigurationByKey("ChatBotName", Model.ChatBotName);
+		// providerConfiguration.SetConfigurationByKey("OAuthToken", Model.OAuthToken);
+		// providerConfiguration.SetConfigurationByKey("ChannelName", Model.ChannelName);
+		// providerConfiguration.SetConfigurationByKey("Enabled", Model.Enabled.ToString());
+
+		await Provider.SaveConfiguration(ConfigureTagzAppFactory.Current, providerConfiguration);
+		ToastService.Add($"Saved {providerConfiguration.Name} Configuration", MessageSeverity.Success);
+
+		// get the new health status
+		Health = await Provider.GetHealth();
+	}
+
+	public class ViewModel
+	{
+		
+	}
+
+}
