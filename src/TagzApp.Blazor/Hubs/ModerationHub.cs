@@ -136,7 +136,7 @@ public class ModerationHub : Hub<IModerationClient>
 	{
 		var thisUser = await _UserManager.GetUserAsync(Context.User);
 		var capabilities = (BlockedUserCapabilities)blockedUserCapabilities;
-		await _Repository.BlockUser(authorUserName, provider, thisUser?.NormalizedUserName ?? thisUser.Email, new DateTimeOffset(new DateTime(2050, 1, 1), TimeSpan.Zero), capabilities	);
+		await _Repository.BlockUser(authorUserName, provider, thisUser?.NormalizedUserName ?? thisUser.Email, new DateTimeOffset(new DateTime(2050, 1, 1), TimeSpan.Zero), capabilities);
 	}
 
 	// Add Message to the Queue in ModerationRepository
