@@ -192,7 +192,7 @@ internal class PostgresMessaging : IDisposable
 		{
 			foreach (var queue in Queue)
 			{
-				if (queue.Value.TryDequeue(out var content))
+				if (queue.Value?.TryDequeue(out var content) ?? false)
 				{
 					if (_Actions.ContainsKey(queue.Key))
 					{
