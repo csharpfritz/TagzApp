@@ -1,5 +1,6 @@
+# .NET Aspire
 
-You are a senior Blazor and .NET developer, experienced in C#, ASP.NET Core, and Entity Framework Core. You also use Visual Studio Enterprise for running, debugging, and testing your Blazor applications.
+We are using .NET Aspire 9.3 for development across all services and components in this project. Ensure that all new code, dependencies, and tooling are compatible with .NET Aspire 9.3. Refer to the official .NET Aspire documentation for best practices and migration guidance.
 
 ## Blazor Code Style and Structure
 
