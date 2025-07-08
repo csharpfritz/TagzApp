@@ -8,8 +8,8 @@ internal class TwitchProfileRepository
 {
 
 	private static readonly ConcurrentDictionary<string, (string, DateTime)> _ProfilePics = new();
-	private readonly string _ClientId;
-	private readonly string _ClientSecret;
+	private readonly string _ClientId = string.Empty;
+	private readonly string _ClientSecret = string.Empty;
 	private readonly HttpClient _HttpClient;
 	private string _AccessToken = string.Empty;
 	private string _RelayUri = string.Empty;
@@ -17,7 +17,7 @@ internal class TwitchProfileRepository
 	public TwitchProfileRepository(IConfiguration configuration, HttpClient client)
 	{
 		_HttpClient = client;
-		_RelayUri = configuration["TwitchRelayUri"];
+		_RelayUri = configuration["TwitchRelayUri"] ?? string.Empty;
 	}
 
 	public async Task<string> GetProfilePic(string userName)
@@ -61,7 +61,7 @@ internal class TwitchProfileRepository
 				var content = await response.Content.ReadAsStringAsync();
 				var users = JsonSerializer.Deserialize<Dictionary<string, string>>(content);
 
-				foreach (var user in users)
+				foreach (var user in users ?? new Dictionary<string, string>())
 				{
 					_ProfilePics.AddOrUpdate(user.Key, (user.Value, now.AddHours(1)), (key, oldValue) => (user.Value, now.AddHours(1)));
 				}
@@ -97,7 +97,7 @@ internal class TwitchProfileRepository
 		{
 			var content = await response.Content.ReadAsStringAsync();
 			var token = JsonSerializer.Deserialize<AccessToken>(content);
-			_AccessToken = token.access_token;
+			_AccessToken = token?.access_token ?? string.Empty;
 			_HttpClient.DefaultRequestHeaders.Clear();
 			_HttpClient.DefaultRequestHeaders.Add("Client-Id", _ClientId);
 			_HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _AccessToken);
@@ -132,22 +132,16 @@ internal class AccessToken
 }
 
 
-public class TwitchUsers
-{
-	public TwitchUser[] data { get; set; }
-}
-
 public class TwitchUser
 {
-	public string id { get; set; }
-	public string login { get; set; }
-	public string display_name { get; set; }
-	public string type { get; set; }
-	public string broadcaster_type { get; set; }
-	public string description { get; set; }
-	public string profile_image_url { get; set; }
-	public string offline_image_url { get; set; }
-	public int view_count { get; set; }
-	public string email { get; set; }
+	public string id { get; set; } = string.Empty;
+	public string login { get; set; } = string.Empty;
+	public string display_name { get; set; } = string.Empty;
+	public string type { get; set; } = string.Empty;
+	public string broadcaster_type { get; set; } = string.Empty;
+	public string description { get; set; } = string.Empty;
+	public string profile_image_url { get; set; } = string.Empty;
+	public string offline_image_url { get; set; } = string.Empty;
+	public string email { get; set; } = string.Empty;
 	public DateTime created_at { get; set; }
 }

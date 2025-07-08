@@ -8,19 +8,19 @@ namespace TagzApp.Common.Models;
 public class ModalConfiguration
 {
 
-	private const string CONFIG_KEY = "ModalConfiguration";
+	private const string _CONFIG_KEY = "ModalConfiguration";
 
 	public string Caption { get; set; } = "TagzApp - Your Friendly Social Media App";
 
-	public string FontColor { get; set; }
+	public string FontColor { get; set; } = string.Empty;
 
-	public string Font { get; set; }
+	public string Font { get; set; } = string.Empty;
 
 	public bool FontIsBold { get; set; } = false;
 
-	public string BackgroundColor { get; set; }
+	public string BackgroundColor { get; set; } = string.Empty;
 
-	public string BackgroundImage { get; set; }
+	public string BackgroundImage { get; set; } = string.Empty;
 
 	public bool BackgroundImageRepeat { get; set; } = false;
 
@@ -89,14 +89,14 @@ public class ModalConfiguration
 	public static async Task<ModalConfiguration> LoadFromConfiguration(IConfigureTagzApp config)
 	{
 
-		return await config.GetConfigurationById<ModalConfiguration>(CONFIG_KEY);
+		return await config.GetConfigurationById<ModalConfiguration>(_CONFIG_KEY);
 
 	}
 
 	public async Task SaveConfiguration(IConfigureTagzApp configure)
 	{
 
-		await configure.SetConfigurationById(CONFIG_KEY, this);
+		await configure.SetConfigurationById(_CONFIG_KEY, this);
 
 	}
 

@@ -9,17 +9,17 @@ public class BlockedUser
 	/// <summary>
 	/// The name of the provider this user is operating on
 	/// </summary>
-	public string Provider { get; set; }
+	public string Provider { get; set; } = string.Empty;
 
 	/// <summary>
 	/// The id of the user on that provider
 	/// </summary>
-	public string UserName { get; set; }
+	public string UserName { get; set; } = string.Empty;
 
 	/// <summary>
 	/// Who was the moderator that blocked this user 
 	/// </summary>
-	public string BlockingUser { get; set; }
+	public string BlockingUser { get; set; } = string.Empty;
 
 	/// <summary>
 	/// When was this user blocked

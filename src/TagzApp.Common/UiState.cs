@@ -14,6 +14,6 @@ public class UiState
 		}
 	}
 
-	public event EventHandler UiUpdate;
+	public event EventHandler? UiUpdate;
 
 }
