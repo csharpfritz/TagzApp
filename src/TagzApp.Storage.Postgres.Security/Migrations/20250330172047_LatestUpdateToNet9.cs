@@ -15,8 +15,8 @@ namespace TagzApp.Storage.Postgres.Security.Migrations
 
 			try
 			{
-				migrationBuilder.DropTable(
-						name: "Settings");
+				// migrationBuilder.DropTable(
+				// 		name: "Settings");
 			}
 			catch { }
 
