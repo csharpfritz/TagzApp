@@ -15,6 +15,9 @@ internal class YoutubeProvider : ISocialMediaProvider
 	private SocialMediaStatus _Status = SocialMediaStatus.Unhealthy;
 	private string _StatusMessage = "Not started";
 
+	// Is this provider running
+	protected bool _RunState = false;
+
 	public TimeSpan NewContentRetrievalFrequency => TimeSpan.FromSeconds(30);
 
 	public bool Enabled { get; }
@@ -27,6 +30,8 @@ internal class YoutubeProvider : ISocialMediaProvider
 
 	public async Task<IEnumerable<Content>> GetContentForHashtag(Hashtag tag, DateTimeOffset since)
 	{
+		if (!_RunState) return Enumerable.Empty<Content>();
+
 		var youtubeService = new YouTubeService(new BaseClientService.Initializer()
 		{
 			ApiKey = _Configuration.ApiKey,
@@ -70,6 +75,7 @@ internal class YoutubeProvider : ISocialMediaProvider
 
 	public Task StartAsync()
 	{
+		if (Enabled) _RunState = true;
 		return Task.CompletedTask;
 	}
 
@@ -77,6 +83,7 @@ internal class YoutubeProvider : ISocialMediaProvider
 
 	public Task StopAsync()
 	{
+		_RunState = false;
 		return Task.CompletedTask;
 	}
 
@@ -93,5 +100,16 @@ internal class YoutubeProvider : ISocialMediaProvider
 	public async Task SaveConfiguration(IConfigureTagzApp configure, IProviderConfiguration providerConfiguration)
 	{
 		await configure.SetConfigurationById(Id, (YoutubeConfiguration)providerConfiguration);
+
+		bool? RunStateChange = Enabled == providerConfiguration.Enabled ? null! : providerConfiguration.Enabled;
+
+		if (RunStateChange is not null && RunStateChange.Value)
+		{
+			_ = StartAsync();
+		} else if (RunStateChange is not null && !RunStateChange.Value)
+		{
+			_ = StopAsync();
+		}
+
 	}
 }

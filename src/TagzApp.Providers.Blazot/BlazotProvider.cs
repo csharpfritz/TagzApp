@@ -23,6 +23,9 @@ public sealed class BlazotProvider : ISocialMediaProvider
 	private string _StatusMessage = "Not started";
 	private bool _DisposedValue;
 
+	// Is this provider running
+	private bool _RunState = false;
+
 	public string Description { get; init; } = "Blazot is an all new social networking platform and your launchpad to the social universe!";
 	public bool Enabled { get; }
 
@@ -47,6 +50,8 @@ public sealed class BlazotProvider : ISocialMediaProvider
 
 	public async Task<IEnumerable<Content>> GetContentForHashtag(Hashtag tag, DateTimeOffset dateTimeOffset)
 	{
+		if (!_RunState) return Enumerable.Empty<Content>();
+
 		var transmissions = new List<Transmission>();
 
 		if (!_Settings.Enabled) return Enumerable.Empty<Content>();
@@ -96,6 +101,7 @@ public sealed class BlazotProvider : ISocialMediaProvider
 
 	public Task StartAsync()
 	{
+		if (Enabled) _RunState = true;
 		return Task.CompletedTask;
 	}
 
@@ -103,6 +109,7 @@ public sealed class BlazotProvider : ISocialMediaProvider
 
 	public Task StopAsync()
 	{
+		_RunState = false;
 		return Task.CompletedTask;
 	}
 
@@ -143,5 +150,16 @@ public sealed class BlazotProvider : ISocialMediaProvider
 	public async Task SaveConfiguration(IConfigureTagzApp configure, IProviderConfiguration providerConfiguration)
 	{
 		await configure.SetConfigurationById(Id, (BlazotConfiguration)providerConfiguration);
+
+		bool? RunStateChange = Enabled == providerConfiguration.Enabled ? null! : providerConfiguration.Enabled;
+
+		if (RunStateChange is not null && RunStateChange.Value)
+		{
+			_ = StartAsync();
+		} else if (RunStateChange is not null && !RunStateChange.Value)
+		{
+			_ = StopAsync();
+		}
+
 	}
 }

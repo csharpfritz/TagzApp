@@ -15,6 +15,9 @@ public class BlueskyProvider : ISocialMediaProvider
 	private (SocialMediaStatus status, string message) _status = (SocialMediaStatus.Unknown, "Not yet started");
 	private ATWebSocketProtocol? _AtWebSocketProtocol;
 
+	// Is this provider running
+	protected bool _RunState = false;
+
 	public string Id => "BLUESKY";
 
 	public string DisplayName => "Bluesky";
@@ -49,6 +52,7 @@ public class BlueskyProvider : ISocialMediaProvider
 
 	public Task<IEnumerable<Content>> GetContentForHashtag(Hashtag tag, DateTimeOffset since)
 	{
+		if (!_RunState) return Task.FromResult(Enumerable.Empty<Content>());
 
 		if (!_Hashtags.Contains(tag)) _Hashtags.Add(tag);
 		if (string.IsNullOrEmpty(_TheTag))
@@ -73,19 +77,17 @@ public class BlueskyProvider : ISocialMediaProvider
 
 		await configure.SetConfigurationById($"provider-{Id}", providerConfiguration);
 
-		if (_Config is null) _Config = new();
+		bool? RunStateChange = Enabled == providerConfiguration.Enabled ? null! : providerConfiguration.Enabled;
 
-		if (_Config.Enabled != providerConfiguration.Enabled && _Config.Enabled)
+		if (_Config is null) _Config = new();
+		_Config = (BlueskyConfiguration)providerConfiguration;
+
+		if (RunStateChange is not null && RunStateChange.Value)
 		{
-			Enabled = providerConfiguration.Enabled;
-			_Config = (BlueskyConfiguration)providerConfiguration;
-			await StopAsync();
-		}
-		else if (_Config.Enabled != providerConfiguration.Enabled && !_Config.Enabled)
+			_ = StartAsync();
+		} else if (RunStateChange is not null && !RunStateChange.Value)
 		{
-			Enabled = providerConfiguration.Enabled;
-			_Config = (BlueskyConfiguration)providerConfiguration;
-			await StartAsync();
+			_ = StopAsync();
 		}
 
 	}
@@ -103,6 +105,8 @@ public class BlueskyProvider : ISocialMediaProvider
 			_status.message = "Bluesky is disabled";
 			return;
 		}
+		
+		_RunState = true;
 
 		var debugLog = new DebugLoggerProvider();
 
@@ -191,6 +195,8 @@ public class BlueskyProvider : ISocialMediaProvider
 
 	public async Task StopAsync()
 	{
+		_RunState = false;
+		
 		if (_AtWebSocketProtocol is null) return;
 
 		await _AtWebSocketProtocol.StopSubscriptionAsync();

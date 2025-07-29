@@ -15,6 +15,9 @@ public class MastodonProvider : ISocialMediaProvider, IHasNewestId
 	private SocialMediaStatus _Status = SocialMediaStatus.Unhealthy;
 	private string _StatusMessage = "Not started";
 
+	// Is this provider running
+	protected bool _RunState = false;
+
 	public MastodonProvider(IHttpClientFactory httpClientFactory, ILogger<MastodonProvider> logger,
 		MastodonConfiguration configuration, ProviderInstrumentation? instrumentation = null)
 	{
@@ -50,6 +53,7 @@ public class MastodonProvider : ISocialMediaProvider, IHasNewestId
 
 	public async Task<IEnumerable<Content>> GetContentForHashtag(Hashtag tag, DateTimeOffset since)
 	{
+		if (!_RunState) return Enumerable.Empty<Content>();
 
 		_Status = SocialMediaStatus.Healthy;
 		_StatusMessage = "OK";
@@ -133,15 +137,28 @@ public class MastodonProvider : ISocialMediaProvider, IHasNewestId
 	public async Task SaveConfiguration(IConfigureTagzApp configure, IProviderConfiguration providerConfiguration)
 	{
 		await configure.SetConfigurationById(MastodonConfiguration.AppSettingsSection, (MastodonConfiguration)providerConfiguration);
+
+		bool? RunStateChange = Enabled == providerConfiguration.Enabled ? null! : providerConfiguration.Enabled;
+
+		if (RunStateChange is not null && RunStateChange.Value)
+		{
+			_ = StartAsync();
+		} else if (RunStateChange is not null && !RunStateChange.Value)
+		{
+			_ = StopAsync();
+		}
+
 	}
 
 	public Task StartAsync()
 	{
+		if (Enabled) _RunState = true;
 		return Task.CompletedTask;
 	}
 
 	public Task StopAsync()
 	{
+		_RunState = false;
 		return Task.CompletedTask;
 	}
 

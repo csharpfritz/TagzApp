@@ -22,6 +22,9 @@ public class TwitchChatProvider : ISocialMediaProvider, IDisposable
 	private SocialMediaStatus _Status = SocialMediaStatus.Unhealthy;
 	private string _StatusMessage = "Not started";
 
+	// Is this provider running
+	protected bool _RunState = false;
+
 	private static readonly ConcurrentQueue<Content> _Contents = new();
 	private static readonly CancellationTokenSource _CancellationTokenSource = new();
 	private TwitchChatConfiguration _Config;
@@ -115,6 +118,7 @@ public class TwitchChatProvider : ISocialMediaProvider, IDisposable
 
 	public Task<IEnumerable<Content>> GetContentForHashtag(Hashtag tag, DateTimeOffset since)
 	{
+		if (!_RunState) return Task.FromResult(Enumerable.Empty<Content>());
 
 		if (!_Client?.IsRunning ?? true)
 		{
@@ -204,13 +208,21 @@ public class TwitchChatProvider : ISocialMediaProvider, IDisposable
 
 	public Task StartAsync()
 	{
-
-		if (string.IsNullOrEmpty(_Config.ChannelName) || string.IsNullOrEmpty(_Config.OAuthToken))
+		if (Enabled)
 		{
-			_Status = SocialMediaStatus.Unhealthy;
-			_StatusMessage = "TwitchChat client is not configured";
+			_RunState = true;
+		}
+		else
+		{
 			return Task.CompletedTask;
 		}
+
+		if (string.IsNullOrEmpty(_Config.ChannelName) || string.IsNullOrEmpty(_Config.OAuthToken))
+			{
+				_Status = SocialMediaStatus.Unhealthy;
+				_StatusMessage = "TwitchChat client is not configured";
+				return Task.CompletedTask;
+			}
 
 		ListenForMessages();
 		return Task.CompletedTask;
@@ -223,6 +235,7 @@ public class TwitchChatProvider : ISocialMediaProvider, IDisposable
 
 	public Task StopAsync()
 	{
+		_RunState = false;
 
 		_Client?.Stop();
 		_Status = SocialMediaStatus.Disabled;
@@ -240,6 +253,8 @@ public class TwitchChatProvider : ISocialMediaProvider, IDisposable
 	{
 		await configure.SetConfigurationById(AppSettingsSection, (TwitchChatConfiguration)providerConfiguration);
 
+		bool? RunStateChange = Enabled == providerConfiguration.Enabled ? null! : providerConfiguration.Enabled;
+
 		// handle channelname change
 		if (_Config.ChannelName != ((TwitchChatConfiguration)providerConfiguration).ChannelName)
 		{
@@ -247,20 +262,15 @@ public class TwitchChatProvider : ISocialMediaProvider, IDisposable
 			_Config.ChannelName = ((TwitchChatConfiguration)providerConfiguration).ChannelName;
 		}
 
-		// Handle enabled state change
-		if (_Config.Enabled != providerConfiguration.Enabled && _Config.Enabled)
-		{
-			Enabled = providerConfiguration.Enabled;
-			_Config = (TwitchChatConfiguration)providerConfiguration;
-			await StopAsync();
-		}
-		else if (_Config.Enabled != providerConfiguration.Enabled && !_Config.Enabled)
-		{
-			Enabled = providerConfiguration.Enabled;
-			_Config = (TwitchChatConfiguration)providerConfiguration;
-			await StartAsync();
-		}
+		_Config = (TwitchChatConfiguration)providerConfiguration;
 
+		if (RunStateChange is not null && RunStateChange.Value)
+		{
+			_ = StartAsync();
+		} else if (RunStateChange is not null && !RunStateChange.Value)
+		{
+			_ = StopAsync();
+		}
 
 	}
 }

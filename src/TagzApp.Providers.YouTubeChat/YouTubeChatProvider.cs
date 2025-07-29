@@ -7,7 +7,7 @@ namespace TagzApp.Providers.YouTubeChat;
 
 public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 {
-	private readonly YouTubeChatConfiguration _ChatConfig;
+	private YouTubeChatConfiguration _ChatConfig;
 	public const string ProviderName = "YouTubeChat";
 
 	public const string ProviderId = "YOUTUBE-CHAT";
@@ -22,6 +22,9 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 	public string YouTubeEmailId { get; set; }
 	public bool Enabled { get; }
 
+	// Is this provider running
+	protected bool _RunState = false;
+
 	private string _GoogleException = string.Empty;
 
 	private CancellationTokenSource _TokenSource = new();
@@ -35,12 +38,14 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 	public YouTubeChatProvider(YouTubeChatConfiguration config, IConfiguration configuration)
 	{
 		_ChatConfig = config;
-		Enabled = true; // config.Enabled;
+		Enabled = config.Enabled;
 
 	}
 
 	public async Task<IEnumerable<Content>> GetContentForHashtag(Hashtag tag, DateTimeOffset since)
 	{
+
+		if (!_RunState) return Enumerable.Empty<Content>();
 
 		if (string.IsNullOrEmpty(_ChatConfig.LiveChatId) || (!string.IsNullOrEmpty(_GoogleException) && _GoogleException.StartsWith(_ChatConfig.LiveChatId))) return Enumerable.Empty<Content>();
 		var liveChatListRequest = new LiveChatMessagesResource.ListRequest(_Service, _ChatConfig.LiveChatId, new(new[] { "id", "snippet", "authorDetails" }));
@@ -133,15 +138,15 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 	{
 
 		// if (string.IsNullOrEmpty(LiveChatId) || string.IsNullOrEmpty(RefreshToken)) return;
-
-		_Service = await GetGoogleService();
-
 		if (!_ChatConfig.Enabled)
 		{
 			_Status = SocialMediaStatus.Disabled;
 			_StatusMessage = "YouTubeChat client is disabled";
 			return;
 		}
+
+		_RunState = true;
+		_Service = await GetGoogleService();
 
 	}
 
@@ -300,6 +305,9 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 
 	public Task StopAsync()
 	{
+		_RunState = false;
+		_Status = SocialMediaStatus.Disabled;
+		_StatusMessage = "Not running";
 		return Task.CompletedTask;
 	}
 
@@ -311,6 +319,18 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 	public async Task SaveConfiguration(IConfigureTagzApp configure, IProviderConfiguration providerConfiguration)
 	{
 		await configure.SetConfigurationById(Id, (YouTubeChatConfiguration)providerConfiguration);
+
+		bool? RunStateChange = Enabled == providerConfiguration.Enabled ? null! : providerConfiguration.Enabled;
+		_ChatConfig = (YouTubeChatConfiguration)providerConfiguration;
+
+		if (RunStateChange is not null && RunStateChange.Value)
+		{
+			_ = StartAsync();
+		} else if (RunStateChange is not null && !RunStateChange.Value)
+		{
+			_ = StopAsync();
+		}
+
 	}
 
 	#endregion

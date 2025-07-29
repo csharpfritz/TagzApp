@@ -12,6 +12,9 @@ public class AzureQueueProvider : ISocialMediaProvider
 	private string _StatusMessage = "Not started";
 	private bool _DisposedValue;
 
+	// Is this provider running
+	private bool _RunState = false;
+
 	public string Id => "WEBSITE";
 	public string DisplayName => "Website";
 	public string DllName { get { return "AzureQueue"; } }
@@ -29,6 +32,7 @@ public class AzureQueueProvider : ISocialMediaProvider
 
 	public async Task<IEnumerable<Content>> GetContentForHashtag(Hashtag tag, DateTimeOffset since)
 	{
+		if (!_RunState) return Enumerable.Empty<Content>();
 
 		var messageResponse = await _Client.ReceiveMessagesAsync(maxMessages: 10);
 		if (!messageResponse.Value.Any()) return Enumerable.Empty<Content>();
@@ -62,6 +66,15 @@ public class AzureQueueProvider : ISocialMediaProvider
 	public async Task StartAsync()
 	{
 
+		if (Enabled)
+		{
+			_RunState = true;
+		}
+		else
+		{
+			return;
+		}
+
 		_Client = new QueueClient(_Configuration.QueueConnectionString, QueueName);
 
 		try
@@ -82,6 +95,7 @@ public class AzureQueueProvider : ISocialMediaProvider
 
 	public Task StopAsync()
 	{
+		_RunState = false;
 		// do nothing
 		return Task.CompletedTask;
 	}
@@ -125,7 +139,18 @@ public class AzureQueueProvider : ISocialMediaProvider
 	public async Task SaveConfiguration(IConfigureTagzApp configure, IProviderConfiguration providerConfiguration)
 	{
 		await configure.SetConfigurationById($"provider-{Id.ToLowerInvariant()}", (AzureQueueConfiguration)providerConfiguration);
+
+		bool? RunStateChange = Enabled == providerConfiguration.Enabled ? null! : providerConfiguration.Enabled;
 		_Configuration = (AzureQueueConfiguration)providerConfiguration;
+
+		if (RunStateChange is not null && RunStateChange.Value)
+		{
+			_ = StartAsync();
+		} else if (RunStateChange is not null && !RunStateChange.Value)
+		{
+			_ = StopAsync();
+		}
+
 	}
 
 	#endregion
