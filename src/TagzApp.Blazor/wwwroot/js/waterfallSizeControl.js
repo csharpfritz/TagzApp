@@ -6,7 +6,7 @@
 			if (taggedContent) {
 				// Update the grid-template-columns to use the new minimum width
 				taggedContent.style.gridTemplateColumns = `repeat(auto-fill, minmax(${width}px, 1fr))`;
-				
+
 				// Trigger a resize of all grid items after changing column widths
 				if (window.Masonry && window.Masonry.resizeAllGridItems) {
 					// Small delay to let the grid reflow
@@ -19,8 +19,11 @@
 
 		setModalScale: function (scalePercent) {
 			// Update CSS custom property for modal scaling
-			document.documentElement.style.setProperty('--modal-scale', scalePercent / 100);
-			
+			document.documentElement.style.setProperty(
+				'--modal-scale',
+				scalePercent / 100,
+			);
+
 			// Apply scale to modal dialog
 			const modalDialog = document.querySelector('.modal-dialog');
 			if (modalDialog) {
@@ -41,7 +44,9 @@
 				overlayDisplay.style.transformOrigin = 'center center';
 			}
 
-			const portraitOverlayDisplay = document.getElementById('portraitOverlayDisplay');
+			const portraitOverlayDisplay = document.getElementById(
+				'portraitOverlayDisplay',
+			);
 			if (portraitOverlayDisplay) {
 				portraitOverlayDisplay.style.transform = `scale(${scalePercent / 100})`;
 				portraitOverlayDisplay.style.transformOrigin = 'center center';
@@ -63,10 +68,11 @@
 		},
 
 		getModalScale: function () {
-			const scale = getComputedStyle(document.documentElement)
-				.getPropertyValue('--modal-scale');
+			const scale = getComputedStyle(document.documentElement).getPropertyValue(
+				'--modal-scale',
+			);
 			return scale ? parseFloat(scale) * 100 : 100;
-		}
+		},
 	};
 
 	window.WaterfallSizeControl = waterfallSizeControl;
