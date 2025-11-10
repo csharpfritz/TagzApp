@@ -189,7 +189,7 @@ public class MastodonProvider : ISocialMediaProvider, IHasNewestId, IDisposable
 	public Task StartAsync()
 	{
 		var currentConfig = _ConfigMonitor.CurrentValue;
-		
+
 		if (!currentConfig.Enabled)
 		{
 			_Status = SocialMediaStatus.Disabled;
@@ -200,7 +200,7 @@ public class MastodonProvider : ISocialMediaProvider, IHasNewestId, IDisposable
 			_Status = SocialMediaStatus.Healthy;
 			_StatusMessage = "Mastodon provider is ready";
 		}
-		
+
 		_Logger.LogInformation("Mastodon provider started. Status: {Status}, Enabled: {Enabled}", _Status, currentConfig.Enabled);
 		return Task.CompletedTask;
 	}
@@ -209,7 +209,7 @@ public class MastodonProvider : ISocialMediaProvider, IHasNewestId, IDisposable
 	{
 		_Status = SocialMediaStatus.Disabled;
 		_StatusMessage = "Mastodon provider is stopped";
-			
+
 		_Logger.LogInformation("Mastodon provider stopped");
 		return Task.CompletedTask;
 	}
