@@ -1,5 +1,4 @@
 ﻿using System.Text.Json.Serialization;
-using TagzApp.Communication.Configuration;
 using System.Net.Http.Headers;
 using System.Text.Json;
 

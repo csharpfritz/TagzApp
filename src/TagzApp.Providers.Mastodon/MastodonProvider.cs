@@ -75,11 +75,11 @@ public class MastodonProvider : ISocialMediaProvider, IHasNewestId, IDisposable
 	private async Task HandleConfigurationChange(MastodonConfiguration newConfig)
 	{
 		_Logger.LogInformation("Mastodon provider configuration changed. Enabled: {Enabled}", newConfig.Enabled);
-		
+
 		// Handle configuration changes - for Mastodon, the main change is usually the Enabled flag
 		// Most other configuration changes (like BaseAddress) would require provider restart to take effect
 		// since they affect the HttpClient configuration
-		
+
 		if (newConfig.Enabled)
 		{
 			await StartAsync();
@@ -181,7 +181,7 @@ public class MastodonProvider : ISocialMediaProvider, IHasNewestId, IDisposable
 	{
 		var config = (MastodonConfiguration)providerConfiguration;
 		await config.SaveToConfigurationAsync(configure);
-		
+
 		// The IOptionsMonitor will automatically pick up the changes from the saved configuration
 		// No need to manually update since it's reactive
 	}
