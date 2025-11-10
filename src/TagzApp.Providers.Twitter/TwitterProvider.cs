@@ -282,6 +282,20 @@ public class TwitterProvider : ISocialMediaProvider, IHasNewestId, IDisposable
 
 	public Task StartAsync()
 	{
+		var currentConfig = _ConfigMonitor.CurrentValue;
+		
+		if (!currentConfig.Enabled)
+		{
+			_Status = SocialMediaStatus.Disabled;
+			_StatusMessage = "Twitter provider is disabled";
+		}
+		else
+		{
+			_Status = SocialMediaStatus.Healthy;
+			_StatusMessage = "Twitter provider is ready";
+		}
+		
+		_Logger.LogInformation("Twitter provider started. Status: {Status}, Enabled: {Enabled}", _Status, currentConfig.Enabled);
 		return Task.CompletedTask;
 	}
 
@@ -294,6 +308,10 @@ public class TwitterProvider : ISocialMediaProvider, IHasNewestId, IDisposable
 
 	public Task StopAsync()
 	{
+		_Status = SocialMediaStatus.Disabled;
+		_StatusMessage = "Twitter provider is stopped";
+			
+		_Logger.LogInformation("Twitter provider stopped");
 		return Task.CompletedTask;
 	}
 

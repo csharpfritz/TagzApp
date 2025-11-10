@@ -168,8 +168,14 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 		{
 			_Status = SocialMediaStatus.Disabled;
 			_StatusMessage = "YouTubeChat client is disabled";
-			return;
 		}
+		else
+		{
+			_Status = SocialMediaStatus.Healthy;
+			_StatusMessage = "YouTubeChat provider is ready";
+		}
+		
+		_Logger.LogInformation("YouTubeChat provider started. Status: {Status}, Enabled: {Enabled}", _Status, currentConfig.Enabled);
 
 	}
 
@@ -346,6 +352,10 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 
 	public Task StopAsync()
 	{
+		_Status = SocialMediaStatus.Disabled;
+		_StatusMessage = "YouTubeChat provider is stopped";
+			
+		_Logger.LogInformation("YouTubeChat provider stopped");
 		return Task.CompletedTask;
 	}
 
