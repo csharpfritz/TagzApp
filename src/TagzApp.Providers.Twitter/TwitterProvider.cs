@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using System.IO.Compression;
 using System.Net.Http.Json;
@@ -6,15 +7,17 @@ using System.Reflection;
 using System.Text.Json;
 using System.Web;
 
+using TagzApp.Common.Configuration;
 using TagzApp.Providers.Twitter.Configuration;
 using TagzApp.Providers.Twitter.Models;
 
 namespace TagzApp.Providers.Twitter;
 
-public class TwitterProvider : ISocialMediaProvider, IHasNewestId
+public class TwitterProvider : ISocialMediaProvider, IHasNewestId, IDisposable
 {
 	private readonly HttpClient _HttpClient;
-	private readonly TwitterConfiguration _Configuration;
+	private readonly IOptionsMonitor<TwitterConfiguration> _ConfigMonitor;
+	private readonly IDisposable? _ConfigChangeSubscription;
 	private readonly ILogger<TwitterProvider> _Logger;
 	private const string _SearchFields = "created_at,author_id,entities";
 	private const int _SearchMaxResults = 100;
@@ -32,20 +35,65 @@ public class TwitterProvider : ISocialMediaProvider, IHasNewestId
 	public string NewestId { get; set; } = string.Empty;
 
 	public string Description { get; init; } = "Twitter is a service for friends, family, and coworkers to communicate and stay connected through the exchange of quick, frequent messages";
-	public bool Enabled { get; }
+	public bool Enabled => _ConfigMonitor.CurrentValue.Enabled;
 
+	// Production constructor
 	public TwitterProvider(IHttpClientFactory httpClientFactory, ILogger<TwitterProvider> logger,
-		TwitterConfiguration configuration)
+		IOptionsMonitor<TwitterConfiguration> configMonitor)
 	{
 		_HttpClient = httpClientFactory.CreateClient(nameof(TwitterProvider));
-		_Configuration = configuration;
+		_ConfigMonitor = configMonitor;
 		_Logger = logger;
-		Enabled = configuration.Enabled;
 
-		if (!string.IsNullOrWhiteSpace(configuration.Description))
+		// Subscribe to configuration changes
+		_ConfigChangeSubscription = _ConfigMonitor.OnChange(async (config, name) =>
 		{
-			Description = configuration.Description;
+			await HandleConfigurationChange(config);
+		});
+
+		var currentConfig = _ConfigMonitor.CurrentValue;
+		if (!string.IsNullOrWhiteSpace(currentConfig.Description))
+		{
+			Description = currentConfig.Description;
 		}
+	}
+
+	// Testing/Development constructor
+	internal TwitterProvider(IHttpClientFactory httpClientFactory, ILogger<TwitterProvider> logger,
+		IOptions<TwitterConfiguration> settings)
+	{
+		_HttpClient = httpClientFactory.CreateClient(nameof(TwitterProvider));
+		_ConfigMonitor = settings.ToStaticMonitor();
+		_ConfigChangeSubscription = null;
+		_Logger = logger;
+
+		var currentConfig = _ConfigMonitor.CurrentValue;
+		if (!string.IsNullOrWhiteSpace(currentConfig.Description))
+		{
+			Description = currentConfig.Description;
+		}
+	}
+
+	private async Task HandleConfigurationChange(TwitterConfiguration newConfig)
+	{
+		var previousConfig = _ConfigMonitor.CurrentValue;
+
+		// Handle enabled state change
+		if (previousConfig.Enabled != newConfig.Enabled)
+		{
+			if (newConfig.Enabled)
+			{
+				await StartAsync();
+			}
+			else
+			{
+				await StopAsync();
+			}
+		}
+
+		// Handle other configuration changes if needed
+		// Note: HTTP client configuration changes would require recreating the client
+		// For now, we'll focus on the Enabled state changes
 	}
 	// TODO: Check CS1998: Async method lacks 'await' operators and will run synchronously
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -65,14 +113,14 @@ public class TwitterProvider : ISocialMediaProvider, IHasNewestId
 		try
 		{
 
-			if (_Configuration.Enabled)
+			if (_ConfigMonitor.CurrentValue.Enabled)
 			{
 
 				//var response = await _HttpClient.GetAsync(targetUri);
 				//var rawText = await response.Content.ReadAsStringAsync();
 
-				recentTweets = await _HttpClient.GetFromJsonAsync<TwitterData>(targetUri);
-				NewestId = recentTweets.meta.newest_id ?? NewestId;
+				recentTweets = await _HttpClient.GetFromJsonAsync<TwitterData>(targetUri) ?? new TwitterData();
+				NewestId = recentTweets?.meta?.newest_id ?? NewestId;
 
 			}
 			else
@@ -251,16 +299,20 @@ public class TwitterProvider : ISocialMediaProvider, IHasNewestId
 
 	public void Dispose()
 	{
-		// do nothing
+		_ConfigChangeSubscription?.Dispose();
 	}
 
 	public async Task<IProviderConfiguration> GetConfiguration(IConfigureTagzApp configure)
 	{
-		return await configure.GetConfigurationById<TwitterConfiguration>(Id);
+		return await BaseProviderConfiguration<TwitterConfiguration>.CreateFromConfigurationAsync<TwitterConfiguration>(configure);
 	}
 
 	public async Task SaveConfiguration(IConfigureTagzApp configure, IProviderConfiguration providerConfiguration)
 	{
-		await configure.SetConfigurationById(Id, (TwitterConfiguration)providerConfiguration);
+		var twitterConfig = (TwitterConfiguration)providerConfiguration;
+		await twitterConfig.SaveToConfigurationAsync(configure);
+
+		// The IOptionsMonitor will automatically pick up the changes from the saved configuration
+		// No need to manually update since it's reactive
 	}
 }

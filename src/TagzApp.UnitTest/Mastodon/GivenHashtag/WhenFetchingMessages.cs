@@ -1,6 +1,7 @@
 ﻿// Ignore Spelling: Sut
 
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using System.Diagnostics.Metrics;
 using TagzApp.Common.Telemetry;
 using TagzApp.Providers.Mastodon;
@@ -36,7 +37,8 @@ public class WhenFetchingMessages
 			Enabled = true
 		};
 
-		_Sut = new MastodonProvider(_HttpClientFactory, NullLogger<MastodonProvider>.Instance, config, _Instrumentation);
+		var options = Options.Create(config);
+		_Sut = new MastodonProvider(_HttpClientFactory, NullLogger<MastodonProvider>.Instance, options, _Instrumentation);
 	}
 
 	[Fact]

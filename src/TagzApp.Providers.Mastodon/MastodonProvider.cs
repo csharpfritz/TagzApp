@@ -1,31 +1,60 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Net.Http.Json;
 using System.Web;
 using TagzApp.Common.Telemetry;
+using TagzApp.Common.Configuration;
 using TagzApp.Providers.Mastodon.Configuration;
 
 namespace TagzApp.Providers.Mastodon;
 
-public class MastodonProvider : ISocialMediaProvider, IHasNewestId
+public class MastodonProvider : ISocialMediaProvider, IHasNewestId, IDisposable
 {
 
 	private readonly HttpClient _HttpClient;
 	private readonly ILogger _Logger;
 	private readonly ProviderInstrumentation? _Instrumentation;
+	private readonly IOptionsMonitor<MastodonConfiguration> _ConfigMonitor;
+	private readonly IDisposable? _ConfigChangeSubscription;
 	private SocialMediaStatus _Status = SocialMediaStatus.Unhealthy;
 	private string _StatusMessage = "Not started";
 
+	// Production constructor with reactive configuration
 	public MastodonProvider(IHttpClientFactory httpClientFactory, ILogger<MastodonProvider> logger,
-		MastodonConfiguration configuration, ProviderInstrumentation? instrumentation = null)
+		IOptionsMonitor<MastodonConfiguration> configMonitor, ProviderInstrumentation? instrumentation = null)
 	{
 		_HttpClient = httpClientFactory.CreateClient(nameof(MastodonProvider));
 		_Logger = logger;
+		_ConfigMonitor = configMonitor;
 		_Instrumentation = instrumentation;
-		Enabled = configuration.Enabled;
 
-		if (!string.IsNullOrWhiteSpace(configuration.Description))
+		// Subscribe to configuration changes
+		_ConfigChangeSubscription = _ConfigMonitor.OnChange(async (config, name) =>
 		{
-			Description = configuration.Description;
+			await HandleConfigurationChange(config);
+		});
+
+		var currentConfig = _ConfigMonitor.CurrentValue;
+		if (!string.IsNullOrWhiteSpace(currentConfig.Description))
+		{
+			Description = currentConfig.Description;
+		}
+	}
+
+	// Testing constructor with static configuration
+	internal MastodonProvider(IHttpClientFactory httpClientFactory, ILogger<MastodonProvider> logger,
+		IOptions<MastodonConfiguration> settings, ProviderInstrumentation? instrumentation = null)
+	{
+		_HttpClient = httpClientFactory.CreateClient(nameof(MastodonProvider));
+		_Logger = logger;
+		_ConfigMonitor = settings.ToStaticMonitor();
+		_Instrumentation = instrumentation;
+		_ConfigChangeSubscription = null; // No change subscription for static configurations
+
+		var currentConfig = _ConfigMonitor.CurrentValue;
+		if (!string.IsNullOrWhiteSpace(currentConfig.Description))
+		{
+			Description = currentConfig.Description;
 		}
 	}
 
@@ -36,16 +65,34 @@ public class MastodonProvider : ISocialMediaProvider, IHasNewestId
 	public TimeSpan NewContentRetrievalFrequency => TimeSpan.FromSeconds(20);
 
 	public string NewestId { get; set; } = string.Empty;
-	public bool Enabled { get; }
+	public bool Enabled => _ConfigMonitor.CurrentValue.Enabled;
 
 	public void Dispose()
 	{
-		// do nothing
+		_ConfigChangeSubscription?.Dispose();
+	}
+
+	private async Task HandleConfigurationChange(MastodonConfiguration newConfig)
+	{
+		_Logger.LogInformation("Mastodon provider configuration changed. Enabled: {Enabled}", newConfig.Enabled);
+		
+		// Handle configuration changes - for Mastodon, the main change is usually the Enabled flag
+		// Most other configuration changes (like BaseAddress) would require provider restart to take effect
+		// since they affect the HttpClient configuration
+		
+		if (newConfig.Enabled)
+		{
+			await StartAsync();
+		}
+		else
+		{
+			await StopAsync();
+		}
 	}
 
 	public async Task<IProviderConfiguration> GetConfiguration(IConfigureTagzApp configure)
 	{
-		return await configure.GetConfigurationById<MastodonConfiguration>(MastodonConfiguration.AppSettingsSection);
+		return await MastodonConfiguration.CreateFromConfigurationAsync<MastodonConfiguration>(configure);
 	}
 
 	public async Task<IEnumerable<Content>> GetContentForHashtag(Hashtag tag, DateTimeOffset since)
@@ -132,7 +179,11 @@ public class MastodonProvider : ISocialMediaProvider, IHasNewestId
 
 	public async Task SaveConfiguration(IConfigureTagzApp configure, IProviderConfiguration providerConfiguration)
 	{
-		await configure.SetConfigurationById(MastodonConfiguration.AppSettingsSection, (MastodonConfiguration)providerConfiguration);
+		var config = (MastodonConfiguration)providerConfiguration;
+		await config.SaveToConfigurationAsync(configure);
+		
+		// The IOptionsMonitor will automatically pick up the changes from the saved configuration
+		// No need to manually update since it's reactive
 	}
 
 	public Task StartAsync()
