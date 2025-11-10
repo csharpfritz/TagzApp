@@ -45,13 +45,13 @@ public class StartYouTubeChat : IConfigureProvider
 	{
 		// Register configuration setup
 		services.AddSingleton<IConfigureOptions<YouTubeChatConfiguration>, YouTubeChatConfigurationSetup>();
-		
+
 		// Configure options with the setup class
 		services.Configure<YouTubeChatConfiguration>(options => { /* options configured by setup class */ });
 
 		// Register the provider
 		services.AddSingleton<ISocialMediaProvider, YouTubeChatProvider>();
-		
+
 		return services;
 	}
 }
