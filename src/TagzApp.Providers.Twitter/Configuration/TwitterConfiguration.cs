@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using TagzApp.Communication.Configuration;
 
 namespace TagzApp.Providers.Twitter.Configuration;
 

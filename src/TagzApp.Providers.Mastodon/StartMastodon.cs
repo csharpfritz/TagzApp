@@ -28,7 +28,7 @@ public class StartMastodon : IConfigureProvider
 	{
 		// Register configuration setup
 		services.AddSingleton<IConfigureOptions<MastodonConfiguration>, MastodonConfigurationSetup>();
-		
+
 		// Configure options with the setup class
 		services.Configure<MastodonConfiguration>(options => { /* options configured by setup class */ });
 
@@ -65,7 +65,7 @@ public class StartMastodon : IConfigureProvider
 		// Register HTTP client with separate options
 		services.AddHttpClient<ISocialMediaProvider, MastodonProvider, HttpClientOptions>(httpClientOptions);
 		services.AddTransient<ISocialMediaProvider, MastodonProvider>();
-		
+
 		return services;
 	}
 }
