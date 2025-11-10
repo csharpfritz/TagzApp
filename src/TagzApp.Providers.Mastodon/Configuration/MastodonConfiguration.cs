@@ -1,5 +1,4 @@
 ﻿using System.Text.Json.Serialization;
-using TagzApp.Communication.Configuration;
 using System.Text.Json;
 
 namespace TagzApp.Providers.Mastodon.Configuration;

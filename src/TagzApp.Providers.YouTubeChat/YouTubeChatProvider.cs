@@ -39,7 +39,7 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 	private string _StatusMessage = "Not started";
 
 	// Production constructor with reactive configuration
-	public YouTubeChatProvider(IOptionsMonitor<YouTubeChatConfiguration> configMonitor, IConfiguration configuration, 
+	public YouTubeChatProvider(IOptionsMonitor<YouTubeChatConfiguration> configMonitor, IConfiguration configuration,
 		HttpClient httpClient, ILogger<YouTubeChatProvider> logger)
 	{
 		_ConfigMonitor = configMonitor;
@@ -336,10 +336,10 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 	private async Task HandleConfigurationChange(YouTubeChatConfiguration newConfig)
 	{
 		_Logger.LogInformation("YouTubeChat provider configuration changed. Enabled: {Enabled}", newConfig.Enabled);
-		
+
 		// Handle configuration changes - for YouTubeChat, major changes require provider restart
 		// to take effect since they affect the YouTube service initialization
-		
+
 		if (newConfig.Enabled)
 		{
 			await StartAsync();
@@ -368,7 +368,7 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 	{
 		var config = (YouTubeChatConfiguration)providerConfiguration;
 		await config.SaveToConfigurationAsync(configure);
-		
+
 		// The IOptionsMonitor will automatically pick up the changes from the saved configuration
 		// No need to manually update since it's reactive
 	}

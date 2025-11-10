@@ -53,7 +53,7 @@ public class StartMastodon : IConfigureProvider
 			// Save the new format to database
 			await ConfigureTagzAppFactory.Current.SetConfigurationById(MastodonConfiguration.AppSettingsSection, currentConfig);
 		}
-		
+
 		var httpClientOptions = new HttpClientOptions
 		{
 			BaseAddress = currentConfig.BaseAddress,
