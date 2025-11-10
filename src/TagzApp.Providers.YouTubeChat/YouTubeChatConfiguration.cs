@@ -1,8 +1,7 @@
 ﻿namespace TagzApp.Providers.YouTubeChat;
 
-public class YouTubeChatConfiguration : IProviderConfiguration
+public class YouTubeChatConfiguration : BaseProviderConfiguration<YouTubeChatConfiguration>
 {
-
 	public const string AppSettingsSection = "providers:youtubechat";
 
 	public const string Key_Google_ClientId = "Authentication:Google:ClientId";
@@ -10,14 +9,17 @@ public class YouTubeChatConfiguration : IProviderConfiguration
 
 	public const string Scope_YouTube = "https://www.googleapis.com/auth/youtube";
 
-	public string Name => "YouTubeChat";
-	public string Description => "Listen to messages in YouTube LiveChat for a Live Stream";
-	public bool Enabled { get; set; }
+	protected override string ConfigurationKey => AppSettingsSection;
+
+	public override string Name => "YouTubeChat";
+	public override string Description => "Listen to messages in YouTube LiveChat for a Live Stream";
+	public override bool Enabled { get; set; }
+
+	public override string[] Keys => ["ChannelTitle", "ChannelId", "ChannelEmail", "BroadcastId", "BroadcastTitle", "LiveChatId", "RefreshToken", "YouTubeApiKey", "Enabled"];
 
 	/// <summary>
 	/// Title of the YouTube Channel we are monitoring
 	/// </summary>
-	/// <value></value>
 	public string ChannelTitle { get; set; } = string.Empty;
 
 	public string ChannelId { get; set; } = string.Empty;
@@ -25,31 +27,26 @@ public class YouTubeChatConfiguration : IProviderConfiguration
 	/// <summary>
 	/// Email used to authenticate with YouTube
 	/// </summary>
-	/// <value></value>
 	public string ChannelEmail { get; set; } = string.Empty;
 
 	/// <summary>
 	/// Id of the Broadcast we are monitoring
 	/// </summary>
-	/// <value></value>
 	public string BroadcastId { get; set; } = string.Empty;
 
 	/// <summary>
 	/// Title of the Broadcast we are monitoring
 	/// </summary>
-	/// <value></value>
 	public string BroadcastTitle { get; set; } = string.Empty;
 
 	/// <summary>
 	/// Id of the LiveChat we are monitoring
 	/// </summary>
-	/// <value></value>
 	public string LiveChatId { get; set; } = string.Empty;
 
 	/// <summary>
 	/// Token used to refresh the access token
 	/// </summary>
-	/// <value></value>
 	public string RefreshToken { get; set; } = string.Empty;
 
 	/// <summary>
@@ -57,9 +54,7 @@ public class YouTubeChatConfiguration : IProviderConfiguration
 	/// </summary>
 	public string YouTubeApiKey { get; set; } = string.Empty;
 
-	public string[] Keys => ["ChannelTitle", "ChannelId", "ChannelEmail", "BroadcastId", "BroadcastTitle", "LiveChatId", "RefreshToken", "YouTubeApiKey"];
-
-	public string GetConfigurationByKey(string key)
+	public override string GetConfigurationByKey(string key)
 	{
 		return key switch
 		{
@@ -76,9 +71,8 @@ public class YouTubeChatConfiguration : IProviderConfiguration
 		};
 	}
 
-	public void SetConfigurationByKey(string key, string value)
+	public override void SetConfigurationByKey(string key, string value)
 	{
-
 		switch (key)
 		{
 			case "ChannelTitle":
@@ -109,9 +103,25 @@ public class YouTubeChatConfiguration : IProviderConfiguration
 				Enabled = bool.Parse(value);
 				break;
 			default:
-				throw new NotImplementedException();
-
+				throw new NotImplementedException($"Configuration key '{key}' is not supported.");
 		}
+	}
 
+	protected override void UpdateFromConfiguration(YouTubeChatConfiguration other)
+	{
+		ChannelTitle = other.ChannelTitle;
+		ChannelId = other.ChannelId;
+		ChannelEmail = other.ChannelEmail;
+		BroadcastId = other.BroadcastId;
+		BroadcastTitle = other.BroadcastTitle;
+		LiveChatId = other.LiveChatId;
+		RefreshToken = other.RefreshToken;
+		YouTubeApiKey = other.YouTubeApiKey;
+		Enabled = other.Enabled;
+	}
+
+	public void UpdateFrom(YouTubeChatConfiguration other)
+	{
+		UpdateFromConfiguration(other);
 	}
 }

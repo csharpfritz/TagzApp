@@ -1,6 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 using TagzApp.Communication.Configuration;
-using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace TagzApp.Providers.Mastodon.Configuration;
@@ -31,7 +30,7 @@ public class MastodonConfiguration : BaseProviderConfiguration<MastodonConfigura
 	// HTTP Client properties
 	public Uri? BaseAddress { get; set; }
 	public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
-	public HttpRequestHeaders? DefaultHeaders { get; set; }
+	public Dictionary<string, string> DefaultHeaders { get; set; } = new();
 	public bool UseHttp2 { get; set; } = true;
 
 	public MastodonConfiguration()
@@ -63,7 +62,7 @@ public class MastodonConfiguration : BaseProviderConfiguration<MastodonConfigura
 				Timeout = TimeSpan.Parse(value);
 				break;
 			case "DefaultHeaders":
-				DefaultHeaders = DeserializeHeaders(value);
+				DefaultHeaders = DeserializeHeaders(value) ?? new Dictionary<string, string>();
 				break;
 			case "UseHttp2":
 				UseHttp2 = bool.Parse(value);
@@ -90,33 +89,22 @@ public class MastodonConfiguration : BaseProviderConfiguration<MastodonConfigura
 		UpdateFromConfiguration(other);
 	}
 
-	private static string SerializeHeaders(HttpRequestHeaders? headers)
+	private static string SerializeHeaders(Dictionary<string, string> headers)
 	{
-		if (headers == null) return string.Empty;
-
-		var headerDict = headers.ToDictionary(h => h.Key, h => h.Value.ToArray());
-		return JsonSerializer.Serialize(headerDict);
+		return JsonSerializer.Serialize(headers);
 	}
 
-	private static HttpRequestHeaders? DeserializeHeaders(string value)
+	private static Dictionary<string, string>? DeserializeHeaders(string value)
 	{
-		if (string.IsNullOrEmpty(value)) return null;
+		if (string.IsNullOrEmpty(value)) return new Dictionary<string, string>();
 
 		try
 		{
-			var headerDict = JsonSerializer.Deserialize<Dictionary<string, string[]>>(value);
-			if (headerDict == null) return null;
-
-			var client = new HttpClient();
-			foreach (var kvp in headerDict)
-			{
-				client.DefaultRequestHeaders.Add(kvp.Key, kvp.Value);
-			}
-			return client.DefaultRequestHeaders;
+			return JsonSerializer.Deserialize<Dictionary<string, string>>(value) ?? new Dictionary<string, string>();
 		}
 		catch
 		{
-			return null;
+			return new Dictionary<string, string>();
 		}
 	}
 }

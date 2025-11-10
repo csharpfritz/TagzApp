@@ -10,8 +10,26 @@ public class StartTwitter : IConfigureProvider
 {
 	public async Task<IServiceCollection> RegisterServices(IServiceCollection services, CancellationToken cancellationToken = default)
 	{
-		// Load initial configuration
-		var initialConfig = await BaseProviderConfiguration<TwitterConfiguration>.CreateFromConfigurationAsync<TwitterConfiguration>(ConfigureTagzAppFactory.Current);
+		// Load initial configuration with error handling for old format or encryption issues
+		TwitterConfiguration initialConfig;
+		try
+		{
+			initialConfig = await BaseProviderConfiguration<TwitterConfiguration>.CreateFromConfigurationAsync<TwitterConfiguration>(ConfigureTagzAppFactory.Current);
+		}
+		catch (System.Text.Json.JsonException)
+		{
+			// Configuration format change or decryption issue detected
+			initialConfig = new TwitterConfiguration();
+			// Save the new format to database
+			await initialConfig.SaveToConfigurationAsync(ConfigureTagzAppFactory.Current);
+		}
+		catch (InvalidOperationException ex) when (ex.Message.Contains("Failed to decrypt"))
+		{
+			// Encryption/decryption error - create new default configuration
+			initialConfig = new TwitterConfiguration();
+			// Save the new format to database
+			await initialConfig.SaveToConfigurationAsync(ConfigureTagzAppFactory.Current);
+		}
 
 		// Configure options for IOptionsMonitor
 		services.Configure<TwitterConfiguration>(options =>

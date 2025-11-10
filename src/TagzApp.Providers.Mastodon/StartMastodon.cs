@@ -33,12 +33,32 @@ public class StartMastodon : IConfigureProvider
 		services.Configure<MastodonConfiguration>(options => { /* options configured by setup class */ });
 
 		// Create separate HttpClientOptions for HTTP client configuration
-		var currentConfig = await ConfigureTagzAppFactory.Current.GetConfigurationById<MastodonConfiguration>(MastodonConfiguration.AppSettingsSection);
+		// Handle potential deserialization errors from old configuration format or encryption issues
+		MastodonConfiguration currentConfig;
+		try
+		{
+			currentConfig = await ConfigureTagzAppFactory.Current.GetConfigurationById<MastodonConfiguration>(MastodonConfiguration.AppSettingsSection);
+		}
+		catch (System.Text.Json.JsonException)
+		{
+			// Configuration format change or decryption issue detected
+			currentConfig = new MastodonConfiguration();
+			// Save the new format to database
+			await ConfigureTagzAppFactory.Current.SetConfigurationById(MastodonConfiguration.AppSettingsSection, currentConfig);
+		}
+		catch (InvalidOperationException ex) when (ex.Message.Contains("Failed to decrypt"))
+		{
+			// Encryption/decryption error - create new default configuration
+			currentConfig = new MastodonConfiguration();
+			// Save the new format to database
+			await ConfigureTagzAppFactory.Current.SetConfigurationById(MastodonConfiguration.AppSettingsSection, currentConfig);
+		}
+		
 		var httpClientOptions = new HttpClientOptions
 		{
 			BaseAddress = currentConfig.BaseAddress,
 			Timeout = currentConfig.Timeout,
-			DefaultHeaders = ConvertHeaders(currentConfig.DefaultHeaders),
+			DefaultHeaders = currentConfig.DefaultHeaders,
 			UseHttp2 = currentConfig.UseHttp2
 		};
 
@@ -47,17 +67,5 @@ public class StartMastodon : IConfigureProvider
 		services.AddTransient<ISocialMediaProvider, MastodonProvider>();
 		
 		return services;
-	}
-
-	private static Dictionary<string, string>? ConvertHeaders(System.Net.Http.Headers.HttpRequestHeaders? headers)
-	{
-		if (headers == null) return null;
-
-		var result = new Dictionary<string, string>();
-		foreach (var header in headers)
-		{
-			result[header.Key] = string.Join(", ", header.Value);
-		}
-		return result.Count > 0 ? result : null;
 	}
 }

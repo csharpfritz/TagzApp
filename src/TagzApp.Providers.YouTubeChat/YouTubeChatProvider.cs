@@ -2,50 +2,73 @@ using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using TagzApp.Common.Configuration;
 
 namespace TagzApp.Providers.YouTubeChat;
 
 public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 {
-	private readonly YouTubeChatConfiguration _ChatConfig;
+	private readonly IOptionsMonitor<YouTubeChatConfiguration> _ConfigMonitor;
+	private readonly IDisposable? _ConfigChangeSubscription;
+	private readonly ILogger<YouTubeChatProvider> _Logger;
 	public const string ProviderName = "YouTubeChat";
 
 	public const string ProviderId = "YOUTUBE-CHAT";
 
 	public string Id => ProviderId;
 	public string DisplayName => ProviderName;
-	public string Description { get; init; }
+	public string Description { get; init; } = "Listen to messages in YouTube LiveChat for a Live Stream";
 	public TimeSpan NewContentRetrievalFrequency { get; set; } = TimeSpan.FromSeconds(15);
 
-	public string NewestId { get; set; }
-	public string RefreshToken { get; set; }
-	public string YouTubeEmailId { get; set; }
-	public bool Enabled { get; }
+	public string NewestId { get; set; } = string.Empty;
+	public string RefreshToken { get; set; } = string.Empty;
+	public string YouTubeEmailId { get; set; } = string.Empty;
+	public bool Enabled => _ConfigMonitor.CurrentValue.Enabled;
 
 	private readonly HttpClient _HttpClient;
 	private string _GoogleException = string.Empty;
 
 	private CancellationTokenSource _TokenSource = new();
-	private YouTubeService _Service;
+	private YouTubeService? _Service;
 	private bool _DisposedValue;
-	private string _NextPageToken;
+	private string _NextPageToken = string.Empty;
 
 	private SocialMediaStatus _Status = SocialMediaStatus.Unhealthy;
 	private string _StatusMessage = "Not started";
 
-	public YouTubeChatProvider(YouTubeChatConfiguration config, IConfiguration configuration, HttpClient httpClient)
+	// Production constructor with reactive configuration
+	public YouTubeChatProvider(IOptionsMonitor<YouTubeChatConfiguration> configMonitor, IConfiguration configuration, 
+		HttpClient httpClient, ILogger<YouTubeChatProvider> logger)
 	{
-		_ChatConfig = config;
-		Enabled = true; // config.Enabled;
+		_ConfigMonitor = configMonitor;
+		_Logger = logger;
 		_HttpClient = httpClient;
 
+		// Subscribe to configuration changes
+		_ConfigChangeSubscription = _ConfigMonitor.OnChange(async (config, name) =>
+		{
+			await HandleConfigurationChange(config);
+		});
+	}
+
+	// Testing constructor with static configuration
+	internal YouTubeChatProvider(IOptions<YouTubeChatConfiguration> settings, IConfiguration configuration,
+		HttpClient httpClient, ILogger<YouTubeChatProvider> logger)
+	{
+		_ConfigMonitor = settings.ToStaticMonitor();
+		_Logger = logger;
+		_HttpClient = httpClient;
+		_ConfigChangeSubscription = null; // No change subscription for static configurations
 	}
 
 	public async Task<IEnumerable<Content>> GetContentForHashtag(Hashtag tag, DateTimeOffset since)
 	{
+		var currentConfig = _ConfigMonitor.CurrentValue;
 
-		if (string.IsNullOrEmpty(_ChatConfig.LiveChatId) || (!string.IsNullOrEmpty(_GoogleException) && _GoogleException.StartsWith(_ChatConfig.LiveChatId))) return Enumerable.Empty<Content>();
-		var liveChatListRequest = new LiveChatMessagesResource.ListRequest(_Service, _ChatConfig.LiveChatId, new(new[] { "id", "snippet", "authorDetails" }));
+		if (string.IsNullOrEmpty(currentConfig.LiveChatId) || (!string.IsNullOrEmpty(_GoogleException) && _GoogleException.StartsWith(currentConfig.LiveChatId))) return Enumerable.Empty<Content>();
+		var liveChatListRequest = new LiveChatMessagesResource.ListRequest(_Service!, currentConfig.LiveChatId, new(new[] { "id", "snippet", "authorDetails" }));
 		liveChatListRequest.MaxResults = 2000;
 		liveChatListRequest.ProfileImageSize = 36;
 
@@ -64,8 +87,8 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 			Console.WriteLine($"Exception while fetching YouTubeChat: {ex.Message}");
 			if (ex.Message.Contains("live chat is no longer live"))
 			{
-				_GoogleException = $"{_ChatConfig.LiveChatId}:{ex.Message}";
-				_ChatConfig.LiveChatId = string.Empty;
+				_GoogleException = $"{currentConfig.LiveChatId}:{ex.Message}";
+				// Note: Cannot modify configuration here - it's reactive and readonly
 			}
 
 			_Status = SocialMediaStatus.Unhealthy;
@@ -75,7 +98,7 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 		}
 
 		_Status = SocialMediaStatus.Healthy;
-		_StatusMessage = $"OK -- adding ({contents.Items.Count}) messages for chatid '{_ChatConfig.LiveChatId}' at {DateTimeOffset.UtcNow}";
+		_StatusMessage = $"OK -- adding ({contents.Items.Count}) messages for chatid '{currentConfig.LiveChatId}' at {DateTimeOffset.UtcNow}";
 
 		try
 		{
@@ -90,7 +113,7 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 				Provider = Id,
 				ProviderId = i.Id,
 				Text = string.IsNullOrEmpty(i.Snippet.DisplayMessage) ? "- REMOVED MESSAGE -" : i.Snippet.DisplayMessage,
-				SourceUri = new Uri($"https://youtube.com/livechat/{_ChatConfig.LiveChatId}"),
+				SourceUri = new Uri($"https://youtube.com/livechat/{currentConfig.LiveChatId}"),
 				Timestamp = DateTimeOffset.Parse(i.Snippet.PublishedAtRaw),
 				Type = ContentType.Message,
 				HashtagSought = tag?.Text ?? ""
@@ -118,9 +141,10 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 
 		if (_Service is not null) return _Service;
 
+		var currentConfig = _ConfigMonitor.CurrentValue;
 		_Service = new YouTubeService(new BaseClientService.Initializer
 		{
-			ApiKey = _ChatConfig.YouTubeApiKey,
+			ApiKey = currentConfig.YouTubeApiKey,
 			ApplicationName = "TagzApp"
 		});
 
@@ -133,13 +157,14 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 
 	public async Task StartAsync()
 	{
+		var currentConfig = _ConfigMonitor.CurrentValue;
 
 		// if (string.IsNullOrEmpty(LiveChatId) || string.IsNullOrEmpty(RefreshToken)) return;
 
 		_Service = await GetGoogleService();
 		await YouTubeEmoteTranslator.LoadEmotes(_HttpClient, 10);
 
-		if (!_ChatConfig.Enabled)
+		if (!currentConfig.Enabled)
 		{
 			_Status = SocialMediaStatus.Disabled;
 			_StatusMessage = "YouTubeChat client is disabled";
@@ -150,12 +175,12 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 
 	public async Task<string> GetChannelForUserAsync()
 	{
-
+		var currentConfig = _ConfigMonitor.CurrentValue;
 		var service = await GetGoogleService();
 
 		var channelRequest = service.Search.List("snippet");
 		//channelRequest.Mine = true;
-		channelRequest.ChannelId = _ChatConfig.ChannelId;
+		channelRequest.ChannelId = currentConfig.ChannelId;
 		var channels = channelRequest.Execute();
 
 		// Not sure if this is needed, can't replicate "fisrt" error. (https://github.com/FritzAndFriends/TagzApp/issues/241)
@@ -165,12 +190,12 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 
 	public IEnumerable<YouTubeBroadcast> GetBroadcastsForUser()
 	{
-
+		var currentConfig = _ConfigMonitor.CurrentValue;
 		var service = GetGoogleService().GetAwaiter().GetResult();
 
 		var listRequest = service.Search.List("snippet");
 		//listRequest.Q = searchString;
-		listRequest.ChannelId = _ChatConfig.ChannelId;
+		listRequest.ChannelId = currentConfig.ChannelId;
 		listRequest.EventType = SearchResource.ListRequest.EventTypeEnum.Upcoming;
 		listRequest.Type = "video";
 		listRequest.MaxResults = 500;
@@ -197,7 +222,7 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 
 		listRequest = service.Search.List("snippet");
 		//listRequest.Q = searchString;
-		listRequest.ChannelId = _ChatConfig.ChannelId;
+		listRequest.ChannelId = currentConfig.ChannelId;
 		listRequest.EventType = SearchResource.ListRequest.EventTypeEnum.Live;
 		listRequest.Type = "video";
 		listRequest.MaxResults = 5;
@@ -275,8 +300,9 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 		{
 			if (disposing)
 			{
-				_Service.Dispose();
+				_Service?.Dispose();
 				_TokenSource.Cancel();
+				_ConfigChangeSubscription?.Dispose();
 			}
 
 			// TODO: free unmanaged resources (unmanaged objects) and override finalizer
@@ -301,6 +327,23 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 
 	public Task<(SocialMediaStatus Status, string Message)> GetHealth() => Task.FromResult((_Status, _StatusMessage));
 
+	private async Task HandleConfigurationChange(YouTubeChatConfiguration newConfig)
+	{
+		_Logger.LogInformation("YouTubeChat provider configuration changed. Enabled: {Enabled}", newConfig.Enabled);
+		
+		// Handle configuration changes - for YouTubeChat, major changes require provider restart
+		// to take effect since they affect the YouTube service initialization
+		
+		if (newConfig.Enabled)
+		{
+			await StartAsync();
+		}
+		else
+		{
+			await StopAsync();
+		}
+	}
+
 	public Task StopAsync()
 	{
 		return Task.CompletedTask;
@@ -308,12 +351,16 @@ public class YouTubeChatProvider : ISocialMediaProvider, IDisposable
 
 	public async Task<IProviderConfiguration> GetConfiguration(IConfigureTagzApp configure)
 	{
-		return await configure.GetConfigurationById<YouTubeChatConfiguration>(Id);
+		return await YouTubeChatConfiguration.CreateFromConfigurationAsync<YouTubeChatConfiguration>(configure);
 	}
 
 	public async Task SaveConfiguration(IConfigureTagzApp configure, IProviderConfiguration providerConfiguration)
 	{
-		await configure.SetConfigurationById(Id, (YouTubeChatConfiguration)providerConfiguration);
+		var config = (YouTubeChatConfiguration)providerConfiguration;
+		await config.SaveToConfigurationAsync(configure);
+		
+		// The IOptionsMonitor will automatically pick up the changes from the saved configuration
+		// No need to manually update since it's reactive
 	}
 
 	#endregion
