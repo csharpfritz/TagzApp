@@ -4,7 +4,6 @@ using Fritz.Charlie.Components.Services;
 using Microsoft.AspNetCore.SignalR;
 using TagzApp.Blazor.Hubs;
 using TagzApp.ViewModels.Data;
-using TagzApp.Common;
 
 namespace TagzApp.Blazor.Services;
 
@@ -122,15 +121,15 @@ public class SignalRNotifier : INotifyNewMessages
 			if (!string.IsNullOrEmpty(locationText))
 			{
 				Console.WriteLine($"[SIGNALR] Found location '{locationText}' in content from {content.Author.DisplayName}");
-				
+
 				var geoPoint = await _GeolocationService.GetPointFromLocation(locationText);
 				if (geoPoint.IsValid)
 				{
 					var userName = string.IsNullOrEmpty(content.Author.UserName) ? content.Author.DisplayName.Replace(" ", "_") : content.Author.UserName;
 					var userId = $"{content.Provider}-{userName}";
-					
+
 					Console.WriteLine($"[SIGNALR] Valid geocode result for '{locationText}': ({geoPoint.Latitude}, {geoPoint.Longitude}), userId: {userId}");
-					
+
 					var locationEvent = new ViewerLocationEvent(
 							geoPoint.Latitude,
 							geoPoint.Longitude,

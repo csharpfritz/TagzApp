@@ -87,7 +87,7 @@ public class PostgresViewerLocationService(IServiceScopeFactory serviceScopeFact
 	public async Task PlotLocationAsync(ViewerLocationEvent locationEvent)
 	{
 		Console.WriteLine($"[POSTGRES] PlotLocationAsync called for user: {locationEvent.UserId}, location: {locationEvent.LocationDescription}");
-		
+
 		await SaveLocationAsync(locationEvent);
 		Console.WriteLine($"[POSTGRES] SaveLocationAsync completed for user: {locationEvent.UserId}");
 
@@ -120,11 +120,11 @@ public class PostgresViewerLocationService(IServiceScopeFactory serviceScopeFact
 
 		// Convert to entity
 		var entity = (PgViewerLocation)locationEvent;
-		
+
 		// Use upsert pattern - check if location already exists for this user
 		var existingLocation = await context.ViewerLocations
 			.FirstOrDefaultAsync(vl => vl.StreamId == entity.StreamId && vl.HashedUserId == entity.HashedUserId);
-		
+
 		if (existingLocation != null)
 		{
 			// Update existing location
@@ -137,7 +137,7 @@ public class PostgresViewerLocationService(IServiceScopeFactory serviceScopeFact
 			// Insert new location
 			context.ViewerLocations.Add(entity);
 		}
-		
+
 		await context.SaveChangesAsync();
 	}
 }
