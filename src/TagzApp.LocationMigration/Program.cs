@@ -12,6 +12,7 @@ var builder = Host.CreateApplicationBuilder(args);
 // Add configuration
 builder.Configuration
 		.AddJsonFile("appsettings.json", optional: false)
+		.AddUserSecrets<Program>()
 		.AddEnvironmentVariables()
 		.AddCommandLine(args);
 
