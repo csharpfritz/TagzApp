@@ -1,6 +1,5 @@
 ﻿using Fritz.Charlie.Common;
 using System.ComponentModel.DataAnnotations;
-using TagzApp.Common;
 
 namespace TagzApp.Storage.Postgres;
 

@@ -4,7 +4,6 @@ using Fritz.Charlie.Components.Services;
 using Microsoft.AspNetCore.SignalR;
 using TagzApp.Blazor.Hubs;
 using TagzApp.ViewModels.Data;
-using TagzApp.Common;
 
 namespace TagzApp.Blazor.Services;
 

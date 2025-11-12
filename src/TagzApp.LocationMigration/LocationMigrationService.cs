@@ -1,9 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using TagzApp.Storage.Postgres;
-using Fritz.Charlie.Components.Services;
-using TagzApp.Common.Models;
 using TagzApp.Common;
 
 namespace TagzApp.LocationMigration;
