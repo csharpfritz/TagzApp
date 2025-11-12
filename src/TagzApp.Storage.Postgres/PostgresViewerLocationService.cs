@@ -86,10 +86,21 @@ public class PostgresViewerLocationService(IServiceScopeFactory serviceScopeFact
 
 	public async Task PlotLocationAsync(ViewerLocationEvent locationEvent)
 	{
+		Console.WriteLine($"[POSTGRES] PlotLocationAsync called for user: {locationEvent.UserId}, location: {locationEvent.LocationDescription}");
+		
 		await SaveLocationAsync(locationEvent);
+		Console.WriteLine($"[POSTGRES] SaveLocationAsync completed for user: {locationEvent.UserId}");
 
 		// raise the event for the map to plot
-		LocationPlotted?.Invoke(this, locationEvent);
+		if (LocationPlotted != null)
+		{
+			Console.WriteLine($"[POSTGRES] Firing LocationPlotted event for user: {locationEvent.UserId}");
+			LocationPlotted.Invoke(this, locationEvent);
+		}
+		else
+		{
+			Console.WriteLine($"[POSTGRES] No subscribers to LocationPlotted event for user: {locationEvent.UserId}");
+		}
 	}
 
 	public async Task RemoveLocationAsync(string streamId, string userId)
@@ -107,9 +118,26 @@ public class PostgresViewerLocationService(IServiceScopeFactory serviceScopeFact
 		using var scope = serviceScopeFactory.CreateScope();
 		var context = scope.ServiceProvider.GetRequiredService<TagzAppContext>();
 
-		// write the location to the database
+		// Convert to entity
 		var entity = (PgViewerLocation)locationEvent;
-		context.ViewerLocations.Add(entity);
+		
+		// Use upsert pattern - check if location already exists for this user
+		var existingLocation = await context.ViewerLocations
+			.FirstOrDefaultAsync(vl => vl.StreamId == entity.StreamId && vl.HashedUserId == entity.HashedUserId);
+		
+		if (existingLocation != null)
+		{
+			// Update existing location
+			existingLocation.Description = entity.Description;
+			existingLocation.Latitude = entity.Latitude;
+			existingLocation.Longitude = entity.Longitude;
+		}
+		else
+		{
+			// Insert new location
+			context.ViewerLocations.Add(entity);
+		}
+		
 		await context.SaveChangesAsync();
 	}
 }

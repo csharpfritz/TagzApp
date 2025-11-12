@@ -121,11 +121,16 @@ public class SignalRNotifier : INotifyNewMessages
 			var locationText = await ExtractLocationFromContentAsync(content);
 			if (!string.IsNullOrEmpty(locationText))
 			{
+				Console.WriteLine($"[SIGNALR] Found location '{locationText}' in content from {content.Author.DisplayName}");
+				
 				var geoPoint = await _GeolocationService.GetPointFromLocation(locationText);
 				if (geoPoint.IsValid)
 				{
 					var userName = string.IsNullOrEmpty(content.Author.UserName) ? content.Author.DisplayName.Replace(" ", "_") : content.Author.UserName;
 					var userId = $"{content.Provider}-{userName}";
+					
+					Console.WriteLine($"[SIGNALR] Valid geocode result for '{locationText}': ({geoPoint.Latitude}, {geoPoint.Longitude}), userId: {userId}");
+					
 					var locationEvent = new ViewerLocationEvent(
 							geoPoint.Latitude,
 							geoPoint.Longitude,
@@ -136,7 +141,12 @@ public class SignalRNotifier : INotifyNewMessages
 					};
 
 					// Store in database
+					Console.WriteLine($"[SIGNALR] Calling PlotLocationAsync for userId: {userId}");
 					await _viewerLocationService.PlotLocationAsync(locationEvent);
+				}
+				else
+				{
+					Console.WriteLine($"[SIGNALR] Invalid geocode result for '{locationText}' from {content.Author.DisplayName}");
 				}
 			}
 		}

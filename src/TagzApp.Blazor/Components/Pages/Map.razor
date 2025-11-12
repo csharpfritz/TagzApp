@@ -62,30 +62,35 @@
     {
         if (_ChatterMap != null)
         {
-           
-						await LoadPersistedLocations();
-
-            // Store handlers for proper disposal
+            // Store handlers for proper disposal and subscribe to events FIRST
+            // to ensure we don't miss any new locations during initial load
             _locationPlottedHandler = async (sender, locationEvent) =>
             {
+                Console.WriteLine($"[MAP] LocationPlotted event received for user: {locationEvent.UserId}, location: {locationEvent.LocationDescription}");
                 if (_ChatterMap != null)
                 {
                     await _ChatterMap.AddMarkerAsync(locationEvent);
                     await InvokeAsync(StateHasChanged);
+                    Console.WriteLine($"[MAP] Successfully added marker for user: {locationEvent.UserId}");
                 }
             };
 
             _locationRemovedHandler = async (sender, locationId) =>
             {
+                Console.WriteLine($"[MAP] LocationRemoved event received for locationId: {locationId}");
                 if (_ChatterMap != null)
                 {
                     await _ChatterMap.RemoveMarkerAsync(locationId);
                     await InvokeAsync(StateHasChanged);
+                    Console.WriteLine($"[MAP] Successfully removed marker for locationId: {locationId}");
                 }
             };
 
             ViewerLocationService.LocationPlotted += _locationPlottedHandler;
             ViewerLocationService.LocationRemoved += _locationRemovedHandler;
+           
+            // Load persisted locations AFTER subscribing to events
+            await LoadPersistedLocations();
         }
     }
 
